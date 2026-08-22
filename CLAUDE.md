@@ -1,7 +1,8 @@
-# CLAUDE.md — danpoints-ai
+# CLAUDE.md — neko
 
-This repo is the AI package for the [Danpoints](https://github.com/DavidTsao1992/danpoints) project.
-It provides Claude Code skills and a one-command installer so any Claude instance can manage Danpoints with shared memory and context.
+Generic Claude Code tooling: skills + a SessionStart hook for local, per-repo AI memory
+(no external service required) and Python environment hygiene. Works on any web or app
+project — nothing here is specific to one codebase.
 
 ---
 
@@ -9,40 +10,49 @@ It provides Claude Code skills and a one-command installer so any Claude instanc
 
 | File | Purpose |
 |------|---------|
-| `install.sh` | One-command setup — checks gh CLI auth, installs skills globally |
-| `.claude/commands/notion-sync.md` | `/notion-sync` skill — reads AI Task Memory before any task |
-| `.claude/commands/notion-log.md` | `/notion-log` skill — writes task result to Notion after completion |
-| `.claude/commands/test-smoke.md` | `/test-smoke` skill — runs pytest on danpoints and logs result |
+| `install.sh` | One-command setup — checks `pyenv`/`python3`, installs skills globally, registers the SessionStart hook |
+| `hooks/session-start.sh` | Runs at every Claude Code session start; creates `.env` (Python projects only) and `AI_MEMORY.md` if missing |
+| `.claude/commands/memory-sync.md` | `/memory-sync` — reads the current repo's `AI_MEMORY.md` before starting a task |
+| `.claude/commands/memory-log.md` | `/memory-log` — appends a timestamped entry to `AI_MEMORY.md` after a task |
+| `.claude/commands/test-smoke.md` | `/test-smoke` — auto-detects and runs the current repo's test suite |
 
 ---
 
-## Key references
+## How memory works
 
-| Resource | URL |
-|----------|-----|
-| Danpoints repo | https://github.com/DavidTsao1992/danpoints |
-| Notion project plan | https://www.notion.so/Danpoints-AI-modules-386c27d6930f804a9f19f5f5da5c693f |
-| AI Task Memory DB | https://app.notion.com/p/59e160ca0a41460d9a141f2a2b47997d |
-| Data source ID | `collection://bb259ede-7143-45e4-9e42-a8c244ea18ff` |
+Each project gets its own `AI_MEMORY.md` at the directory Claude Code was launched from
+(created automatically by the SessionStart hook the first time, if that directory is a
+git repo). It has two sections:
+
+- **Purpose** — one paragraph on what the project is for. Filled in on first real use via
+  `/memory-sync`, not hardcoded by this toolkit.
+- **Log** — timestamped, newest-first entries appended by `/memory-log`: what was done,
+  status (`Done`/`Failed`/`In Progress`), and any gotcha worth a future agent knowing.
+
+This replaces any external memory store (e.g. Notion) — everything lives in the target
+repo itself, versioned alongside the code.
 
 ---
 
-## Workflow (for Claude working in danpoints)
+## How `.env` handling works
 
-```
-1. /notion-sync          ← load prior task history and known failures
-2. develop on feat/fix/chore branch inside ~/work/danpoints
-3. gh pr create --base stg --repo DavidTsao1992/danpoints
-4. human approves → deploy.yml auto-deploys to PythonAnywhere
-5. /test-smoke           ← run tests
-6. /notion-log           ← record outcome
-```
+On every session start, the hook checks the launch directory for Python project markers
+(`requirements.txt`, `pyproject.toml`, `Pipfile`, `setup.py`, `.python-version`). If one is
+present and `.env` doesn't exist yet, it's created — copied from `.env.example` /
+`.env.sample` if either exists, otherwise created empty with a comment header. Non-Python
+projects and projects that already have a `.env` are left untouched.
+
+`install.sh` separately checks whether `pyenv` is installed (informational only — it warns
+but doesn't fail, since not every project needs Python).
 
 ---
 
 ## Development rules for this repo
 
-- Any change to a skill or install.sh → open PR to `main` (this repo has no stg; it is the tooling layer)
-- Keep skills concise — they are prompts, not code; token cost matters
-- When updating the Notion DB schema, update the data source ID in both skills and this CLAUDE.md
-- Never hardcode secrets; install.sh must read credentials from the environment or gh CLI keychain
+- Skills are prompts, not code — keep them concise; token cost matters every time they load.
+- `install.sh` must stay idempotent: re-running it should never duplicate hook entries or
+  clobber unrelated keys in `~/.claude/settings.json`.
+- Nothing in this repo should assume a specific target project, repo name, or external
+  service. If you're tempted to hardcode one, it belongs in the target repo's own
+  `AI_MEMORY.md`, not here.
+- Never hardcode secrets or tokens.

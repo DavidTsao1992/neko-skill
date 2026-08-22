@@ -1,27 +1,16 @@
-Run the Danpoints smoke tests and log results to the AI Task Memory database.
+Run this repo's test suite and report a pass/fail summary.
 
 ## Steps
 
-1. Run the test suite:
-   ```
-   cd ~/work/danpoints && python -m pytest tests/ -v --tb=short 2>&1
-   ```
+1. Detect the test runner for the current project, in this order:
+   - **Python**: if `pytest` is available and there's a `tests/` directory, `pytest.ini`, or a `[tool.pytest.ini_options]` section in `pyproject.toml` → run `python -m pytest -v --tb=short`
+   - **Node**: if `package.json` has a `"test"` script → run `npm test` (or `yarn test` / `pnpm test` if `yarn.lock` / `pnpm-lock.yaml` is present instead of `package-lock.json`)
+   - Otherwise, tell the user no test runner was detected for this project and stop — don't guess.
 
-2. Parse the output:
-   - Extract the summary line (e.g. "5 passed, 1 failed in 3.2s")
-   - If failures exist, capture the first failing test name and error message
+2. Run the tests, capturing:
+   - The summary line (e.g. "5 passed, 1 failed in 3.2s")
+   - On failure, the first failing test name and error message
 
-3. Determine test result:
-   - All pass → `Pass`
-   - Any failure or error → `Fail`
-   - All skipped, none failed → `Skip`
+3. Report the result as `Pass` / `Fail` / `Skip` (Skip only if every test was skipped, none failed), plus the summary line.
 
-4. Log to Notion using `/notion-log` with:
-   - **Task**: "Smoke test run"
-   - **Module**: infra
-   - **Status**: `Done` if Pass/Skip, `Failed` if Fail
-   - **Test Result**: as determined above
-   - **Branch**: current danpoints branch
-   - **Notes**: full pytest summary line + first failure message if any
-
-5. Print the test summary and Notion record URL.
+4. Ask the user whether this run should be logged via `/memory-log`. Don't log automatically — smoke runs are frequent and cheap; logging every one clutters `AI_MEMORY.md`. Only worth logging if it surfaced something notable (a new failure, a fix confirmed).
