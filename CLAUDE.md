@@ -15,6 +15,7 @@ project — nothing here is specific to one codebase.
 | `.claude/commands/memory-sync.md` | `/memory-sync` — reads the current repo's `AI_MEMORY.md` before starting a task |
 | `.claude/commands/memory-log.md` | `/memory-log` — appends a timestamped entry to `AI_MEMORY.md` after a task |
 | `.claude/commands/test-smoke.md` | `/test-smoke` — auto-detects and runs the current repo's test suite |
+| `.claude/commands/python-venv.md` | `/python-venv` — ensures Python code runs in a pyenv-backed `.venv`, never system Python |
 
 ---
 
@@ -44,6 +45,16 @@ projects and projects that already have a `.env` are left untouched.
 
 `install.sh` separately checks whether `pyenv` is installed (informational only — it warns
 but doesn't fail, since not every project needs Python).
+
+---
+
+## How `/python-venv` works
+
+This is separate from the `.env` bootstrapping above — `.env` holds config/secrets,
+`/python-venv` governs where packages get installed. When invoked, it makes sure any
+Python in the project runs inside a `.venv` built from a pyenv-managed interpreter (never
+system Python), and that installs go through that venv's own `pip` rather than
+`source`-based activation, since each Bash call in Claude Code starts a fresh shell.
 
 ---
 
