@@ -1,4 +1,4 @@
-# CLAUDE.md — neko
+# CLAUDE.md — neko-skill
 
 Generic Claude Code tooling: skills + a SessionStart hook for local, per-repo AI memory
 (no external service required) and Python environment hygiene. Works on any web or app
