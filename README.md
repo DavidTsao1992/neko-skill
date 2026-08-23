@@ -1,4 +1,4 @@
-# neko
+# neko-skill
 
 Claude Code skills + a SessionStart hook that give every project you work on:
 
@@ -15,8 +15,8 @@ Works on any web or app repo — nothing here is tied to a specific project.
 ## Install
 
 ```bash
-git clone git@github.com:DavidTsao1992/neko.git
-cd neko
+git clone git@github.com:DavidTsao1992/neko-skill.git
+cd neko-skill
 ./install.sh
 ```
 

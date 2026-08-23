@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# neko — Claude Code SessionStart hook
+# neko-skill — Claude Code SessionStart hook
 #
 # Runs at the start of every Claude Code session, in whatever directory
 # the session was launched from. It is safe to run repeatedly:
@@ -39,7 +39,7 @@ if is_python_project && [ ! -f ".env" ]; then
     MESSAGES+=("Created .env from .env.sample")
   else
     cat > ".env" <<'EOF'
-# Auto-created by neko's SessionStart hook.
+# Auto-created by neko-skill's SessionStart hook.
 # No .env.example was found in this project — add the variables it needs below.
 EOF
     MESSAGES+=("Created empty .env (no .env.example found — fill in required vars)")

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# neko — Claude Code installer
+# neko-skill — Claude Code installer
 # Usage: ./install.sh
 set -euo pipefail
 
@@ -10,10 +10,10 @@ HOOK_SRC="$TOOLKIT_DIR/hooks/session-start.sh"
 CLAUDE_HOME="$HOME/.claude"
 COMMANDS_DEST="$CLAUDE_HOME/commands"
 HOOKS_DEST="$CLAUDE_HOME/hooks"
-HOOK_DEST="$HOOKS_DEST/neko-session-start.sh"
+HOOK_DEST="$HOOKS_DEST/neko-skill-session-start.sh"
 SETTINGS="$CLAUDE_HOME/settings.json"
 
-echo "=== neko — Setup ==="
+echo "=== neko-skill — Setup ==="
 echo ""
 
 # ── 1. Check for pyenv ───────────────────────────────────────────────────────
