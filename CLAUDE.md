@@ -16,6 +16,7 @@ project — nothing here is specific to one codebase.
 | `.claude/commands/memory-log.md` | `/memory-log` — appends a timestamped entry to `AI_MEMORY.md` after a task |
 | `.claude/commands/test-smoke.md` | `/test-smoke` — auto-detects and runs the current repo's test suite |
 | `.claude/commands/python-venv.md` | `/python-venv` — ensures Python code runs in a pyenv-backed `.venv`, never system Python |
+| `.claude/commands/gh-issues.md` | `/gh-issues` — breaks a feature request into atomic, dependency-ordered GitHub issues |
 
 ---
 
@@ -55,6 +56,21 @@ This is separate from the `.env` bootstrapping above — `.env` holds config/sec
 Python in the project runs inside a `.venv` built from a pyenv-managed interpreter (never
 system Python), and that installs go through that venv's own `pip` rather than
 `source`-based activation, since each Bash call in Claude Code starts a fresh shell.
+
+---
+
+## How `/gh-issues` works
+
+Takes a goal-shaped request ("add SSO") and turns it into a set of issues where each one is a
+minimum *function* — a vertical slice that merges on its own and leaves the repo working —
+rather than a layer ("add the model", "add the view"). It reads the existing code first so it
+doesn't file work that's already done, builds a DAG of what blocks what, and shows the plan for
+approval before creating anything.
+
+Issues are created in topological order, blockers first, so every `Blocked by: #N` reference
+points at a number that already exists — no second pass needed. Only the reverse `Blocks:` links
+are backfilled afterwards. GitHub's public API models parent/child sub-issues (`addSubIssue`)
+but has no blocked-by mutation, so dependencies live in the issue body as text.
 
 ---
 
