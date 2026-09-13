@@ -17,6 +17,7 @@ project — nothing here is specific to one codebase.
 | `.claude/commands/test-smoke.md` | `/test-smoke` — auto-detects and runs the current repo's test suite |
 | `.claude/commands/python-venv.md` | `/python-venv` — ensures Python code runs in a pyenv-backed `.venv`, never system Python |
 | `.claude/commands/gh-issues.md` | `/gh-issues` — breaks a feature request into atomic, dependency-ordered GitHub issues |
+| `.claude/commands/git-branch.md` | `/git-branch` — picks or creates the right branch before any edit |
 
 ---
 
@@ -71,6 +72,27 @@ Issues are created in topological order, blockers first, so every `Blocked by: #
 points at a number that already exists — no second pass needed. Only the reverse `Blocks:` links
 are backfilled afterwards. GitHub's public API models parent/child sub-issues (`addSubIssue`)
 but has no blocked-by mutation, so dependencies live in the issue body as text.
+
+---
+
+## How `/git-branch` works
+
+Answers one question before the first edit: which branch does this work belong on? New
+development always gets a fresh branch off the latest default branch. A bug in work that is still
+unmerged goes onto that existing branch, so its PR updates in place. A bug that reproduces on the
+default branch — independent of the unmerged work — gets its own branch, so an urgent fix isn't
+held hostage by an unrelated review.
+
+The bulk of the skill is the risk checklist, because the failure modes are mostly invisible from
+`git status`. The sharpest one: `git branch --merged` does not detect squash- or rebase-merged
+branches, since the merged commits carry different SHAs — so a finished branch looks live, and
+adding to it replays already-merged work. The skill asks GitHub instead
+(`gh pr list --state merged --head <branch>`). Others worth knowing: pushing to an approved PR can
+dismiss the approval; uncommitted changes follow you across a checkout; detached HEAD makes new
+commits unreachable; and stacked or gitflow repos don't base on the default branch at all.
+
+`/memory-sync` points at this skill so the branch decision happens at task start, not after the
+first commit — deciding late means rewriting history to correct it.
 
 ---
 

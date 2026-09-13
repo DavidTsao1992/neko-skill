@@ -22,4 +22,7 @@ Load context from this repo's local AI memory file before starting any task.
 
 3. If the Purpose section is still `TODO` or empty, ask the user for a one-paragraph description of the project and write it in.
 
-4. Present the summary concisely before starting the task — the goal is context, not exhaustive recitation.
+4. If the task will change files, run `/git-branch` before the first edit — it decides whether
+   this is new work needing a fresh branch or a fix belonging on an existing unmerged one.
+
+5. Present the summary concisely before starting the task — the goal is context, not exhaustive recitation.
