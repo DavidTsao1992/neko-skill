@@ -25,6 +25,17 @@ cd neko-skill
 ./install.sh
 ```
 
+To register a separately running `neko-mcp` HTTP server for Claude Code (user
+scope), Gemini CLI, and Codex, set its URL when you run the installer:
+
+```bash
+NEKO_MCP_URL=http://<server-address>:8766/mcp ./install.sh
+```
+
+Without `NEKO_MCP_URL`, the installer leaves existing MCP connections untouched.
+Start `neko-mcp` separately and restart the clients after registration. Re-running
+the installer with a URL updates the endpoint.
+
 This installs all six workflows for each supported agent:
 
 | Agent | Skills or commands | SessionStart config |
