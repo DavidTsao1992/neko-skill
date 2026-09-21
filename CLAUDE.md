@@ -1,6 +1,6 @@
 # CLAUDE.md — neko-skill
 
-Generic Claude Code tooling: skills + a SessionStart hook for local, per-repo AI memory
+Generic Claude Code, Gemini CLI, and Codex tooling: skills + a SessionStart hook for local, per-repo AI memory
 (no external service required) and Python environment hygiene. Works on any web or app
 project — nothing here is specific to one codebase.
 
@@ -18,6 +18,8 @@ project — nothing here is specific to one codebase.
 | `.claude/commands/python-venv.md` | `/python-venv` — ensures Python code runs in a pyenv-backed `.venv`, never system Python |
 | `.claude/commands/gh-issues.md` | `/gh-issues` — breaks a feature request into atomic, dependency-ordered GitHub issues |
 | `.claude/commands/git-branch.md` | `/git-branch` — picks or creates the right branch before any edit |
+| `skills/*/SKILL.md` | Native Gemini and Codex packages for the same six workflows |
+| `hooks/session-start-gemini.sh` | JSON-output wrapper required by Gemini CLI hooks |
 
 ---
 
@@ -99,8 +101,8 @@ first commit — deciding late means rewriting history to correct it.
 ## Development rules for this repo
 
 - Skills are prompts, not code — keep them concise; token cost matters every time they load.
-- `install.sh` must stay idempotent: re-running it should never duplicate hook entries or
-  clobber unrelated keys in `~/.claude/settings.json`.
+- `install.sh` must stay idempotent: re-running it should never duplicate hooks or clobber
+  unrelated Claude, Gemini, or Codex settings.
 - Nothing in this repo should assume a specific target project, repo name, or external
   service. If you're tempted to hardcode one, it belongs in the target repo's own
   `AI_MEMORY.md`, not here.

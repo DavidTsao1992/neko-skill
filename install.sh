@@ -1,107 +1,119 @@
 #!/usr/bin/env bash
-# neko-skill — Claude Code installer
-# Usage: ./install.sh
+# neko-skill — Claude Code, Gemini CLI, and Codex installer
 set -euo pipefail
 
 TOOLKIT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 COMMANDS_SRC="$TOOLKIT_DIR/.claude/commands"
+SKILLS_SRC="$TOOLKIT_DIR/skills"
 HOOK_SRC="$TOOLKIT_DIR/hooks/session-start.sh"
+GEMINI_HOOK_SRC="$TOOLKIT_DIR/hooks/session-start-gemini.sh"
 
 CLAUDE_HOME="$HOME/.claude"
-COMMANDS_DEST="$CLAUDE_HOME/commands"
-HOOKS_DEST="$CLAUDE_HOME/hooks"
-HOOK_DEST="$HOOKS_DEST/neko-skill-session-start.sh"
-SETTINGS="$CLAUDE_HOME/settings.json"
+GEMINI_HOME="$HOME/.gemini"
+CODEX_HOME="$HOME/.codex"
+CODEX_SKILLS_HOME="$HOME/.agents/skills"
 
-echo "=== neko-skill — Setup ==="
+echo "=== neko-skill — Claude, Gemini, and Codex setup ==="
 echo ""
 
-# ── 1. Check for pyenv ───────────────────────────────────────────────────────
 if command -v pyenv &>/dev/null; then
   echo "✓ pyenv: $(pyenv --version)"
 else
-  echo "⚠ pyenv not found."
-  echo "  This toolkit assumes Python projects are managed with pyenv."
-  echo "  Install with: brew install pyenv   (then add pyenv init to your shell profile)"
+  echo "⚠ pyenv not found (required only by the python-venv skill)."
 fi
 
-# ── 2. Check python3 (needed to safely merge hook config below) ────────────
 if command -v python3 &>/dev/null; then
   echo "✓ python3: $(python3 --version 2>&1)"
 else
-  echo "⚠ python3 not found — hook registration below will fall back to manual instructions."
+  echo "✗ python3 is required to merge hook configuration safely."
+  exit 1
 fi
 echo ""
 
-# ── 3. Install skills to ~/.claude/commands/ ────────────────────────────────
-echo "Installing Claude Code skills to $COMMANDS_DEST ..."
-mkdir -p "$COMMANDS_DEST"
-for skill in "$COMMANDS_SRC"/*.md; do
-  filename="$(basename "$skill")"
-  cp "$skill" "$COMMANDS_DEST/$filename"
-  echo "  ✓ /${filename%.md}"
+echo "Installing Claude Code commands..."
+mkdir -p "$CLAUDE_HOME/commands"
+for command_file in "$COMMANDS_SRC"/*.md; do
+  cp "$command_file" "$CLAUDE_HOME/commands/$(basename "$command_file")"
+  echo "  ✓ /$(basename "${command_file%.md}")"
 done
 echo ""
 
-# ── 4. Install the SessionStart hook script ──────────────────────────────────
-echo "Installing SessionStart hook script..."
-mkdir -p "$HOOKS_DEST"
-cp "$HOOK_SRC" "$HOOK_DEST"
-chmod +x "$HOOK_DEST"
-echo "  ✓ $HOOK_DEST"
-echo ""
+install_skills() {
+  local platform="$1"
+  local destination="$2"
+  echo "Installing $platform skills to $destination ..."
+  mkdir -p "$destination"
+  for skill_dir in "$SKILLS_SRC"/*; do
+    local name
+    name="$(basename "$skill_dir")"
+    mkdir -p "$destination/$name"
+    cp "$skill_dir/SKILL.md" "$destination/$name/SKILL.md"
+    echo "  ✓ $name"
+  done
+  echo ""
+}
 
-# ── 5. Register the hook in ~/.claude/settings.json (idempotent merge) ──────
-echo "Registering SessionStart hook in $SETTINGS ..."
-mkdir -p "$CLAUDE_HOME"
-[ -f "$SETTINGS" ] || echo '{}' > "$SETTINGS"
+install_skills "Gemini CLI" "$GEMINI_HOME/skills"
+install_skills "Codex" "$CODEX_SKILLS_HOME"
 
-if command -v python3 &>/dev/null; then
-  python3 - "$SETTINGS" "$HOOK_DEST" <<'PYEOF'
-import json, sys
+echo "Installing SessionStart hooks..."
+mkdir -p "$CLAUDE_HOME/hooks" "$GEMINI_HOME/hooks" "$CODEX_HOME/hooks"
+cp "$HOOK_SRC" "$CLAUDE_HOME/hooks/neko-skill-session-start.sh"
+cp "$HOOK_SRC" "$GEMINI_HOME/hooks/neko-skill-session-start.sh"
+cp "$GEMINI_HOOK_SRC" "$GEMINI_HOME/hooks/neko-skill-session-start-gemini.sh"
+cp "$HOOK_SRC" "$CODEX_HOME/hooks/neko-skill-session-start.sh"
+chmod +x \
+  "$CLAUDE_HOME/hooks/neko-skill-session-start.sh" \
+  "$GEMINI_HOME/hooks/neko-skill-session-start.sh" \
+  "$GEMINI_HOME/hooks/neko-skill-session-start-gemini.sh" \
+  "$CODEX_HOME/hooks/neko-skill-session-start.sh"
 
-settings_path, hook_cmd = sys.argv[1], sys.argv[2]
-with open(settings_path) as f:
+merge_session_start_hook() {
+  local settings="$1"
+  local hook_path="$2"
+  local matcher="$3"
+  mkdir -p "$(dirname "$settings")"
+  [ -f "$settings" ] || printf '{}\n' > "$settings"
+
+  python3 - "$settings" "$hook_path" "$matcher" <<'PYEOF'
+import json, shlex, sys
+
+settings_path, hook_path, matcher = sys.argv[1:]
+with open(settings_path, encoding="utf-8") as f:
     data = json.load(f)
 
-hooks = data.setdefault("hooks", {})
-session_start = hooks.setdefault("SessionStart", [])
-
+command = shlex.quote(hook_path)
+session_start = data.setdefault("hooks", {}).setdefault("SessionStart", [])
 already = any(
-    h.get("type") == "command" and h.get("command") == hook_cmd
-    for entry in session_start
-    for h in entry.get("hooks", [])
+    hook.get("type") == "command" and hook.get("command") == command
+    for group in session_start
+    for hook in group.get("hooks", [])
 )
-
 if not already:
-    session_start.append({"matcher": "", "hooks": [{"type": "command", "command": hook_cmd}]})
-    with open(settings_path, "w") as f:
+    group = {"hooks": [{"type": "command", "command": command}]}
+    if matcher:
+        group["matcher"] = matcher
+    session_start.append(group)
+    with open(settings_path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
         f.write("\n")
-    print("  ✓ hook registered")
+    print(f"  ✓ registered in {settings_path}")
 else:
-    print("  ✓ hook already registered")
+    print(f"  ✓ already registered in {settings_path}")
 PYEOF
-else
-  echo "  ⚠ python3 not found — add this to $SETTINGS by hand:"
-  echo "  \"hooks\": {\"SessionStart\": [{\"matcher\": \"\", \"hooks\": [{\"type\": \"command\", \"command\": \"$HOOK_DEST\"}]}]}"
-fi
+}
+
+merge_session_start_hook "$CLAUDE_HOME/settings.json" "$CLAUDE_HOME/hooks/neko-skill-session-start.sh" ""
+merge_session_start_hook "$GEMINI_HOME/settings.json" "$GEMINI_HOME/hooks/neko-skill-session-start-gemini.sh" ""
+merge_session_start_hook "$CODEX_HOME/hooks.json" "$CODEX_HOME/hooks/neko-skill-session-start.sh" "startup|resume|clear|compact"
 echo ""
 
-# ── 6. Done ───────────────────────────────────────────────────────────────
 echo "=== Setup complete ==="
 echo ""
-echo "Skills installed (available in any Claude Code session):"
-for skill in "$COMMANDS_SRC"/*.md; do
-  filename="$(basename "$skill")"
-  echo "  /${filename%.md}"
-done
+echo "Installed: memory-sync, memory-log, test-smoke, python-venv, gh-issues, git-branch"
+echo "Claude: use /memory-sync (and the other slash commands)."
+echo "Gemini: ask naturally or activate a skill with /skills."
+echo "Codex: ask naturally, use /skills, or mention \$memory-sync."
 echo ""
-echo "Every Claude Code session start will now, in the launch directory:"
-echo "  - create .env if it looks like a Python project and .env is missing"
-echo "  - create AI_MEMORY.md if this is a git repo and it doesn't exist yet"
-echo ""
-echo "Per-repo workflow:"
-echo "  1. /memory-sync   — load this repo's purpose + recent history before starting"
-echo "  2. do the work"
-echo "  3. /memory-log    — append a timestamped entry to AI_MEMORY.md"
+echo "The hook creates AI_MEMORY.md in Git repos and .env in Python projects when missing."
+echo "Codex will ask you to review and trust the hook via /hooks."
