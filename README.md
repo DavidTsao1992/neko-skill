@@ -1,6 +1,6 @@
 # neko-skill
 
-Claude Code skills + a SessionStart hook that give every project you work on:
+Portable skills and a SessionStart hook for Claude Code, Gemini CLI, and Codex that give every project you work on:
 
 - **Local, versioned AI memory** — an `AI_MEMORY.md` per repo tracking purpose and a
   timestamped log of what's been done, instead of an external tool like Notion.
@@ -25,21 +25,26 @@ cd neko-skill
 ./install.sh
 ```
 
-This installs six skills globally to `~/.claude/commands/` (`/memory-sync`,
-`/memory-log`, `/test-smoke`, `/python-venv`, `/gh-issues`, `/git-branch`) and registers a SessionStart hook in
-`~/.claude/settings.json` that runs on every Claude Code session, in whichever
-directory it's launched from. It also checks whether `pyenv` and `python3` are
-available and tells you if they're missing. Safe to re-run.
+This installs all six workflows for each supported agent:
+
+| Agent | Skills or commands | SessionStart config |
+|---|---|---|
+| Claude Code | `~/.claude/commands/*.md` | `~/.claude/settings.json` |
+| Gemini CLI | `~/.gemini/skills/<name>/SKILL.md` | `~/.gemini/settings.json` |
+| Codex | `~/.agents/skills/<name>/SKILL.md` | `~/.codex/hooks.json` |
+
+It is safe to re-run and preserves unrelated settings without duplicating hook entries.
+Codex requires new or changed hooks to be reviewed once with `/hooks` before they run.
 
 ## Usage
 
 In any project:
 
 ```
-1. /memory-sync   — load this repo's purpose + recent history before starting
-2. /git-branch    — make sure you're on the right branch before the first edit
+1. memory-sync   — load this repo's purpose + recent history before starting
+2. git-branch    — make sure you're on the right branch before the first edit
 3. do the work
-4. /memory-log     — append a timestamped entry to AI_MEMORY.md
+4. memory-log     — append a timestamped entry to AI_MEMORY.md
 ```
 
 `/test-smoke` can be run any time to check the current repo's test suite.
@@ -48,8 +53,10 @@ into a pyenv-backed `.venv` rather than system Python.
 `/gh-issues` takes a feature request, reviews what the repo already has, and files a set of
 atomic issues in dependency order — it shows the plan for approval before creating anything.
 
-See [CLAUDE.md](CLAUDE.md) for how the memory file, `.env` bootstrapping, `/python-venv`,
-`/gh-issues`, and `/git-branch` work under the hood.
+Claude users invoke these as slash commands. Gemini and Codex select them automatically from a
+matching request, or you can activate/mention them explicitly using each tool's skill UI.
+
+See [CLAUDE.md](CLAUDE.md) for implementation details.
 
 ## License
 

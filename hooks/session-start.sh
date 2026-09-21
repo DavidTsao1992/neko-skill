@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# neko-skill — Claude Code SessionStart hook
+# neko-skill — portable SessionStart hook
 #
 # Runs at the start of every Claude Code session, in whatever directory
 # the session was launched from. It is safe to run repeatedly:
@@ -8,7 +8,7 @@
 set -uo pipefail
 
 STDIN_JSON="$(cat 2>/dev/null || true)"
-PROJECT_DIR="${CLAUDE_PROJECT_DIR:-}"
+PROJECT_DIR="${NEKO_PROJECT_DIR:-${CLAUDE_PROJECT_DIR:-}}"
 
 if [ -z "$PROJECT_DIR" ] && [ -n "$STDIN_JSON" ] && command -v python3 &>/dev/null; then
   PROJECT_DIR="$(printf '%s' "$STDIN_JSON" | python3 -c '
