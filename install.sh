@@ -12,6 +12,14 @@ CLAUDE_HOME="$HOME/.claude"
 GEMINI_HOME="$HOME/.gemini"
 CODEX_HOME="$HOME/.codex"
 CODEX_SKILLS_HOME="$HOME/.agents/skills"
+NEKO_MCP_URL="${NEKO_MCP_URL:-}"
+
+if [ -n "$NEKO_MCP_URL" ]; then
+  case "$NEKO_MCP_URL" in
+    http://*/mcp|https://*/mcp) ;;
+    *) echo "✗ NEKO_MCP_URL must be an HTTP(S) URL ending in /mcp." >&2; exit 1 ;;
+  esac
+fi
 
 echo "=== neko-skill — Claude, Gemini, and Codex setup ==="
 echo ""
@@ -108,12 +116,72 @@ merge_session_start_hook "$GEMINI_HOME/settings.json" "$GEMINI_HOME/hooks/neko-s
 merge_session_start_hook "$CODEX_HOME/hooks.json" "$CODEX_HOME/hooks/neko-skill-session-start.sh" "startup|resume|clear|compact"
 echo ""
 
+if [ -n "$NEKO_MCP_URL" ]; then
+echo "Registering neko-mcp at $NEKO_MCP_URL ..."
+if command -v claude &>/dev/null; then
+  # Claude defaults to project-local scope; use the user scope for this installer.
+  if python3 - "$HOME/.claude.json" <<'PYEOF'
+import json, sys
+try:
+    with open(sys.argv[1], encoding="utf-8") as f:
+        config = json.load(f)
+except FileNotFoundError:
+    sys.exit(1)
+sys.exit(0 if "neko-mcp" in config.get("mcpServers", {}) else 1)
+PYEOF
+  then
+    claude mcp remove --scope user neko-mcp
+  fi
+  claude mcp add --scope user --transport http neko-mcp "$NEKO_MCP_URL"
+  echo "  ✓ Claude Code"
+else
+  echo "  ⚠ Claude CLI not found; install it and rerun this script to register MCP."
+fi
+
+# Gemini's HTTP transport key is httpUrl, not url (which selects legacy SSE).
+python3 - "$GEMINI_HOME/settings.json" "$NEKO_MCP_URL" <<'PYEOF'
+import json, os, sys, tempfile
+
+path, url = sys.argv[1:]
+with open(path, encoding="utf-8") as f:
+    settings = json.load(f)
+settings.setdefault("mcpServers", {})["neko-mcp"] = {"httpUrl": url}
+fd, temporary = tempfile.mkstemp(prefix=".settings-", dir=os.path.dirname(path))
+try:
+    with os.fdopen(fd, "w", encoding="utf-8") as f:
+        json.dump(settings, f, indent=2)
+        f.write("\n")
+    os.replace(temporary, path)
+except BaseException:
+    os.unlink(temporary)
+    raise
+PYEOF
+echo "  ✓ Gemini CLI"
+
+if command -v codex &>/dev/null; then
+  if codex mcp get neko-mcp &>/dev/null; then
+    codex mcp remove neko-mcp
+  fi
+  codex mcp add neko-mcp --url "$NEKO_MCP_URL"
+  echo "  ✓ Codex"
+else
+  echo "  ⚠ Codex CLI not found; install it and rerun this script to register MCP."
+fi
+echo ""
+else
+  echo "Skipping neko-mcp registration (set NEKO_MCP_URL to configure it)."
+  echo ""
+fi
+
 echo "=== Setup complete ==="
 echo ""
 echo "Installed: memory-sync, memory-log, test-smoke, python-venv, gh-issues, git-branch"
 echo "Claude: use /memory-sync (and the other slash commands)."
 echo "Gemini: ask naturally or activate a skill with /skills."
 echo "Codex: ask naturally, use /skills, or mention \$memory-sync."
+if [ -n "$NEKO_MCP_URL" ]; then
+  echo "neko-mcp: $NEKO_MCP_URL (start the server separately, then restart your clients)."
+fi
 echo ""
 echo "The hook creates AI_MEMORY.md in Git repos and .env in Python projects when missing."
 echo "Codex will ask you to review and trust the hook via /hooks."
