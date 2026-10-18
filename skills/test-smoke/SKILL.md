@@ -8,7 +8,7 @@ description: Use when asked to run the tests or check that a Python or Node repo
 1. Detect the runner, in this order:
    - **Python**: pytest is available and there is a `tests/` directory, `pytest.ini`, or
      `[tool.pytest.ini_options]` in `pyproject.toml` → run `python -m pytest -v --tb=short` with
-     the project's virtual environment (see the `python-venv` skill).
+     the project's virtual environment (a `python-venv` skill, if installed, sets one up).
    - **Node**: `package.json` has a `test` script → `npm test`, or `yarn test` / `pnpm test` when
      `yarn.lock` / `pnpm-lock.yaml` is present instead of `package-lock.json`.
    - Otherwise say no test runner was detected and stop — don't guess.
@@ -16,5 +16,6 @@ description: Use when asked to run the tests or check that a Python or Node repo
    test and its error.
 3. Report `Pass`, `Fail`, or `Skip` (only when every test was skipped and none failed), with the
    summary line.
-4. Offer to record it with the `memory-log` skill only when the run surfaced something notable —
-   a new failure, or a fix confirmed. Never log routine runs automatically.
+4. If a `memory-log` or `repo-memory` skill is installed, offer to record the run only when it
+   surfaced something notable — a new failure, or a fix confirmed. Never log routine runs
+   automatically.
