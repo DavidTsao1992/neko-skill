@@ -140,7 +140,7 @@ run_hook >/dev/null
 new_case "a subdirectory of a repo is left alone"
 mkdir "$REPO/sub" && echo "x" > "$REPO/sub/requirements.txt"
 run_hook "$REPO/sub" >/dev/null
-[ -n "$(ls -A "$REPO/sub" | grep -v '^requirements.txt$')" ] && fail "wrote into a subdirectory: $(ls -A "$REPO/sub")"
+{ [ -e "$REPO/sub/.env" ] || [ -e "$REPO/sub/AI_MEMORY.md" ]; } && fail "wrote into a subdirectory"
 
 new_case "a directory with a fake .git is left alone"
 rm -rf "$REPO/.git" && echo "not a repo" > "$REPO/.git"

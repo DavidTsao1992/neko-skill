@@ -1,0 +1,34 @@
+name: CI
+
+# install.sh and the hooks are shell that runs in other people's home
+# directories and in repositories nobody has reviewed, so every change is linted
+# and tested before it can reach them.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  shellcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Preinstalled on GitHub's Ubuntu images.
+      - name: shellcheck
+        run: shellcheck install.sh hooks/*.sh tests/*.sh
+
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        # Both: BSD and GNU userlands differ (stat, sed, mktemp), and users have both.
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tests
+        run: bash tests/run.sh

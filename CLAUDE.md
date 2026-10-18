@@ -20,7 +20,8 @@ project — nothing here is specific to one codebase.
 | `.claude/commands/git-branch.md` | `/git-branch` — picks or creates the right branch before any edit |
 | `skills/*/SKILL.md` | Native Gemini and Codex packages for the same six workflows |
 | `hooks/session-start-gemini.sh` | JSON-output wrapper required by Gemini CLI hooks |
-| `tests/test_session_start.sh` | Tests for the hook — run `bash tests/test_session_start.sh` |
+| `tests/` | Plain-Bash tests for the hook and `install.sh` — `bash tests/run.sh` runs them all |
+| `.github/workflows/ci.yml` | `shellcheck` plus the tests on Ubuntu and macOS, for every PR |
 
 ---
 
@@ -113,6 +114,9 @@ first commit — deciding late means rewriting history to correct it.
 - Skills are prompts, not code — keep them concise; token cost matters every time they load.
 - `install.sh` must stay idempotent: re-running it should never duplicate hooks or clobber
   unrelated Claude, Gemini, or Codex settings.
+  `tests/test_install.sh` checks both; keep it passing.
+- Run `bash tests/run.sh` and `shellcheck install.sh hooks/*.sh tests/*.sh` before pushing —
+  CI runs the same.
 - Nothing in this repo should assume a specific target project, repo name, or external
   service. If you're tempted to hardcode one, it belongs in the target repo's own
   `AI_MEMORY.md`, not here.
