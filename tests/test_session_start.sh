@@ -34,10 +34,10 @@ run_hook() {  # run_hook [dir] — prints the hook's output
   echo '{}' | NEKO_PROJECT_DIR="${1:-$REPO}" bash "$HOOK"
 }
 
-outside_untouched() {
+outside_untouched() {  # nothing at all was created in $OUTSIDE
   local left
   left="$(find "$OUTSIDE" -mindepth 1 | sed "s#$OUTSIDE/##" | sort | tr '\n' ' ')"
-  [ "$left" = "${1:-}" ] || fail "outside the repo changed: [$left], expected [${1:-}]"
+  [ -z "$left" ] || fail "outside the repo changed: [$left]"
 }
 
 # ── the normal cases still work ──────────────────────────────────────────────
