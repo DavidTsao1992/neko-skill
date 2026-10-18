@@ -45,7 +45,9 @@ new_case "creates .env from .env.example and AI_MEMORY.md"
 echo "KEY=value" > "$REPO/.env.example"
 out="$(run_hook)"
 [ "$(cat "$REPO/.env" 2>/dev/null)" = "KEY=value" ] || fail ".env not copied from .env.example"
-[ "$(stat -f %Lp "$REPO/.env" 2>/dev/null || stat -c %a "$REPO/.env")" = "600" ] || fail ".env is not mode 600"
+# ls -l, not stat: BSD and GNU stat disagree on flags, and GNU's `stat -f` prints
+# filesystem details instead of failing cleanly.
+[[ "$(ls -l "$REPO/.env")" == -rw-------* ]] || fail ".env is not mode 600: $(ls -l "$REPO/.env")"
 grep -q "^# AI Memory — repo$" "$REPO/AI_MEMORY.md" 2>/dev/null || fail "AI_MEMORY.md not created"
 [[ "$out" == *"Created .env from .env.example"* ]] || fail "no message for .env: $out"
 
