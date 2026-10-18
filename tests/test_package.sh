@@ -65,10 +65,13 @@ rejects "a macOS home path" demo "Read /Users/someone/notes.md"
 rejects "a Linux home path" demo "Read /home/Alice/notes.md"
 rejects "root's home" demo "Copy /root/.ssh/config"
 rejects "a Windows profile" demo 'Open C:\Users\alice\notes.md'
-rejects "a GitHub token" demo "token ghp_abcdefghijklmnopqrstuvwxyz0123456789"
-rejects "an OpenAI project key" demo "key sk-proj-abc_DEF-123456789012345678901234"
-rejects "an Anthropic key" demo "key sk-ant-api03-abcdefghijklmnopqrstuvwxyz"
-rejects "a temporary AWS key" demo "aws_access_key_id = ASIAABCDEFGHIJKLMNOP"
+# Fake tokens are assembled at run time: a token-shaped literal in the repo is
+# exactly what secret scanners flag, fake or not (GitHub raised an alert on one).
+FILLER="abcdefghijklmnopqrstuvwxyz0123456789"
+rejects "a GitHub token" demo "token ghp""_$FILLER"
+rejects "an OpenAI project key" demo "key sk-""proj-abc_DEF-$FILLER"
+rejects "an Anthropic key" demo "key sk-""ant-api03-$FILLER"
+rejects "a temporary AWS key" demo "aws_access_key_id = AS""IA$(printf '%s' "$FILLER" | tr '[:lower:]' '[:upper:]' | cut -c1-16)"
 rejects "a Tailscale IPv6 address" demo "Reach it at fd7a:115c:a1e0:ab12:4843:cd96:6240:4f12."
 rejects "a reference to the hook" demo "The SessionStart hook creates it."
 rejects "relying on another skill" demo "Then use the \`git-branch\` skill."
