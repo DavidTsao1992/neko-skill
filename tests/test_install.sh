@@ -126,6 +126,33 @@ echo "edit two" >> "$skill"; install
 [ "$(find "$HOME_DIR/.claude/skills/git-branch" -name 'SKILL.md.bak*' | wc -l | tr -d ' ')" = 2 ] \
   || fail "expected two backups: $(ls "$HOME_DIR/.claude/skills/git-branch")"
 
+new_case "a backup never replaces an earlier one, whatever names are taken"
+install
+skill="$HOME_DIR/.claude/skills/git-branch/SKILL.md"
+echo "old backup" > "$skill.bak"
+echo "older backup" > "$skill.bak.1"
+echo "edit" >> "$skill"; install
+if [ "$(cat "$skill.bak")" != "old backup" ] || [ "$(cat "$skill.bak.1")" != "older backup" ]; then
+  fail "an existing backup was replaced"
+fi
+grep -q "^edit$" "$skill.bak.2" 2>/dev/null || fail "the new backup is not at SKILL.md.bak.2"
+
+new_case "a file a previous install wrote but this release dropped is cleaned up"
+install
+manifest="$HOME_DIR/.local/state/neko-skill/installed.sha256"
+for name in old-skill edited-skill; do
+  mkdir -p "$HOME_DIR/.claude/skills/$name"
+  echo "shipped once" > "$HOME_DIR/.claude/skills/$name/SKILL.md"
+  printf '%s  %s\n' "$(python3 -c 'import hashlib,sys;print(hashlib.sha256(open(sys.argv[1],"rb").read()).hexdigest())' \
+    "$HOME_DIR/.claude/skills/$name/SKILL.md")" "$HOME_DIR/.claude/skills/$name/SKILL.md" >> "$manifest"
+done
+echo "my change" >> "$HOME_DIR/.claude/skills/edited-skill/SKILL.md"
+install
+[ -e "$HOME_DIR/.claude/skills/old-skill" ] && fail "the dropped, unchanged file was left behind"
+[ -f "$HOME_DIR/.claude/skills/edited-skill/SKILL.md" ] || fail "a dropped file the user changed was removed"
+grep -q "kept $HOME_DIR/.claude/skills/edited-skill/SKILL.md" "$WORK/$CASES/install.log" || fail "no message about the kept file"
+grep -q "old-skill" "$manifest" && fail "the dropped file is still in the manifest"
+
 new_case "unchanged installs are upgraded without backups"
 install
 install

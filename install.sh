@@ -57,7 +57,7 @@ BACKED_UP=()
 # install_file <repo-relative source> <destination>
 # Replaces the destination only when it is missing, already identical, the copy
 # install.sh wrote last time, or a stock copy of an earlier release. Anything
-# else is the user's edit: it is moved to <destination>.bak first, and reported.
+# else is the user's edit: it is moved to <destination>.bak (or .bak.N) first, and reported.
 install_file() {
   local rel="$1" dest="$2" src="$TOOLKIT_DIR/$1" current backup
   mkdir -p "$(dirname "$dest")"
@@ -70,10 +70,14 @@ install_file() {
     if [ "$current" != "$(sha256 "$src")" ] \
         && [ "$current" != "$(recorded_hash "$dest")" ] \
         && ! grep -qx "$current  $rel" "$LEGACY_SHIPPED"; then
+      # .bak, then .bak.1, .bak.2, …: the first name not taken, so an earlier
+      # backup is never the one replaced.
       backup="$dest.bak"
-      if [ -e "$backup" ] || [ -L "$backup" ]; then
-        backup="$dest.bak.$(date +%Y%m%d%H%M%S)"
-      fi
+      local n=1
+      while [ -e "$backup" ] || [ -L "$backup" ]; do
+        backup="$dest.bak.$n"
+        n=$((n + 1))
+      done
       mv "$dest" "$backup"
       BACKED_UP+=("$backup")
     fi
@@ -252,6 +256,27 @@ merge_session_start_hook "$CLAUDE_HOME/settings.json" "$CLAUDE_HOOK" ""
 merge_session_start_hook "$GEMINI_HOME/settings.json" "$GEMINI_WRAPPER" ""
 merge_session_start_hook "$CODEX_HOME/hooks.json" "$CODEX_HOOK" "startup|resume|clear|compact"
 echo ""
+
+# Files a previous install wrote that this release no longer ships (a skill or
+# file removed or renamed): remove them if they are still as installed, so they
+# don't linger untracked; keep, and say so, any the user has changed.
+if [ -f "$MANIFEST" ]; then
+  while IFS= read -r line; do
+    [ -n "$line" ] || continue
+    hash="${line%%  *}"
+    path="${line#*  }"
+    case "$NEW_MANIFEST" in *"  $path"$'\n'*) continue ;; esac
+    if [ ! -f "$path" ] || [ -L "$path" ]; then
+      continue
+    elif [ "$(sha256 "$path")" = "$hash" ]; then
+      rm "$path"
+      rmdir "$(dirname "$path")" 2>/dev/null || true
+      echo "  ✓ removed $path (no longer part of neko-skill)"
+    else
+      echo "  ⚠ kept $path: no longer part of neko-skill, but changed since it was installed"
+    fi
+  done < "$MANIFEST"
+fi
 
 mkdir -p "$STATE_DIR"
 printf '%s' "$NEW_MANIFEST" > "$MANIFEST"
