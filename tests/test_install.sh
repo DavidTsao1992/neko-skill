@@ -53,13 +53,19 @@ settings_files() {
 
 # ── a clean install ──────────────────────────────────────────────────────────
 
-new_case "installs every skill, command and hook into an empty HOME"
+new_case "installs every skill and hook into an empty HOME"
 install
 for skill in "${SKILLS[@]}"; do
-  [ -f "$HOME_DIR/.claude/commands/$skill.md" ] || fail "Claude command $skill missing"
-  [ -f "$HOME_DIR/.gemini/skills/$skill/SKILL.md" ] || fail "Gemini skill $skill missing"
-  [ -f "$HOME_DIR/.agents/skills/$skill/SKILL.md" ] || fail "Codex skill $skill missing"
+  for dir in .claude/skills .gemini/skills .agents/skills; do
+    [ -f "$HOME_DIR/$dir/$skill/SKILL.md" ] || fail "$dir/$skill/SKILL.md missing"
+  done
 done
+for dir in .claude/skills .gemini/skills .agents/skills; do
+  for skill in git-branch gh-issues; do  # the skills that link to a reference file
+    [ -f "$HOME_DIR/$dir/$skill/reference.md" ] || fail "$dir/$skill/reference.md missing"
+  done
+done
+[ -e "$HOME_DIR/.claude/commands" ] && fail "installed into ~/.claude/commands"
 for hook in .claude/hooks/neko-skill-session-start.sh .gemini/hooks/neko-skill-session-start-gemini.sh \
             .codex/hooks/neko-skill-session-start.sh; do
   [ -x "$HOME_DIR/$hook" ] || fail "$hook missing or not executable"
@@ -80,6 +86,20 @@ install
 while read -r f; do
   cmp -s "$f" "$f.first" || fail "$(basename "$(dirname "$f")")/$(basename "$f") changed on re-run: $(diff "$f.first" "$f" | head -5)"
 done < <(settings_files)
+
+# ── the old Claude commands are replaced, but only ones neko-skill shipped (#12) ─
+
+new_case "a command neko-skill shipped is removed; an edited one is kept"
+mkdir -p "$HOME_DIR/.claude/commands"
+git -C "$ROOT" show 4245472:.claude/commands/memory-sync.md > "$HOME_DIR/.claude/commands/memory-sync.md"
+git -C "$ROOT" show 4245472:.claude/commands/git-branch.md > "$HOME_DIR/.claude/commands/git-branch.md"
+echo "my own tweak" >> "$HOME_DIR/.claude/commands/git-branch.md"
+echo "mine" > "$HOME_DIR/.claude/commands/deploy.md"
+install
+[ -e "$HOME_DIR/.claude/commands/memory-sync.md" ] && fail "shipped memory-sync command not removed"
+[ -f "$HOME_DIR/.claude/commands/git-branch.md" ] || fail "user-edited git-branch command was deleted"
+[ -f "$HOME_DIR/.claude/commands/deploy.md" ] || fail "an unrelated command was deleted"
+grep -q "kept $HOME_DIR/.claude/commands/git-branch.md" "$WORK/$CASES/install.log" || fail "no warning about the kept command"
 
 # ── unrelated settings survive ───────────────────────────────────────────────
 

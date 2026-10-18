@@ -12,13 +12,13 @@ project — nothing here is specific to one codebase.
 |------|---------|
 | `install.sh` | One-command setup — checks `pyenv`/`python3`, installs skills globally, registers the SessionStart hook |
 | `hooks/session-start.sh` | Runs at every Claude Code, Gemini CLI and Codex session start; at the root of a Git work tree, creates `.env` (Python projects only) and `AI_MEMORY.md` if missing |
-| `.claude/commands/memory-sync.md` | `/memory-sync` — reads the current repo's `AI_MEMORY.md` before starting a task |
-| `.claude/commands/memory-log.md` | `/memory-log` — appends a timestamped entry to `AI_MEMORY.md` after a task |
-| `.claude/commands/test-smoke.md` | `/test-smoke` — auto-detects and runs the current repo's test suite |
-| `.claude/commands/python-venv.md` | `/python-venv` — ensures Python code runs in a pyenv-backed `.venv`, never system Python |
-| `.claude/commands/gh-issues.md` | `/gh-issues` — breaks a feature request into atomic, dependency-ordered GitHub issues |
-| `.claude/commands/git-branch.md` | `/git-branch` — picks or creates the right branch before any edit |
-| `skills/*/SKILL.md` | Native Gemini and Codex packages for the same six workflows |
+| `skills/memory-sync/` | `memory-sync` — reads the current repo's `AI_MEMORY.md` before starting a task |
+| `skills/memory-log/` | `memory-log` — appends a timestamped entry to `AI_MEMORY.md` after a task |
+| `skills/test-smoke/` | `test-smoke` — auto-detects and runs the current repo's test suite |
+| `skills/python-venv/` | `python-venv` — ensures Python code runs in a pyenv-backed `.venv`, never system Python |
+| `skills/gh-issues/` | `gh-issues` — breaks a feature request into atomic, dependency-ordered GitHub issues (`reference.md`: body template, sub-issue API) |
+| `skills/git-branch/` | `git-branch` — picks or creates the right branch before any edit (`reference.md`: the risk checklist) |
+| `legacy/claude-commands.sha256` | Hashes of the old `.claude/commands/*.md` files, so `install.sh` removes only unedited copies |
 | `hooks/session-start-gemini.sh` | JSON-output wrapper required by Gemini CLI hooks |
 | `tests/` | Plain-Bash tests for the hook and `install.sh` — `bash tests/run.sh` runs them all |
 | `.github/workflows/ci.yml` | `shellcheck` plus the tests on Ubuntu and macOS, for every PR |
@@ -112,6 +112,9 @@ first commit — deciding late means rewriting history to correct it.
 ## Development rules for this repo
 
 - Skills are prompts, not code — keep them concise; token cost matters every time they load.
+  `skills/<name>/SKILL.md` is the only copy of each one, for all three agents: steps in
+  SKILL.md, long reference material in a `reference.md` beside it that SKILL.md links to.
+  Descriptions say *when* to use the skill ("Use when …"), since agents select skills by them.
 - `install.sh` must stay idempotent: re-running it should never duplicate hooks or clobber
   unrelated Claude, Gemini, or Codex settings.
   `tests/test_install.sh` checks both; keep it passing.
