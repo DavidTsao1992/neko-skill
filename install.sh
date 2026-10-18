@@ -183,5 +183,6 @@ if [ -n "$NEKO_MCP_URL" ]; then
   echo "neko-mcp: $NEKO_MCP_URL (start the server separately, then restart your clients)."
 fi
 echo ""
-echo "The hook creates AI_MEMORY.md in Git repos and .env in Python projects when missing."
+echo "The hook creates AI_MEMORY.md in Git repos, and .env in Python projects that git-ignore it,"
+echo "when missing. Set NEKO_SKILL_NO_ENV=1 to skip .env."
 echo "Codex will ask you to review and trust the hook via /hooks."

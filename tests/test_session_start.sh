@@ -27,6 +27,7 @@ new_case() {
   mkdir -p "$REPO" "$OUTSIDE"
   git -C "$REPO" init -q
   echo "requests" > "$REPO/requirements.txt"
+  echo ".env" > "$REPO/.gitignore"
 }
 
 run_hook() {  # run_hook [dir] — prints the hook's output
@@ -66,6 +67,31 @@ new_case "a non-Python repo gets AI_MEMORY.md but no .env"
 rm "$REPO/requirements.txt"
 run_hook >/dev/null
 [ -e "$REPO/.env" ] && fail ".env created in a non-Python repo"
+[ -f "$REPO/AI_MEMORY.md" ] || fail "AI_MEMORY.md not created"
+
+# ── .env only where Git ignores it, and only if wanted (#9) ──────────────────
+
+new_case "no .env when .gitignore does not cover it"
+: > "$REPO/.gitignore"
+out="$(run_hook)"
+[ -e "$REPO/.env" ] && fail ".env created although Git would not ignore it"
+[[ "$out" == *"Skipped .env: it would not be git-ignored"* ]] || fail "no skip message: $out"
+[ -f "$REPO/AI_MEMORY.md" ] || fail "AI_MEMORY.md not created"
+
+new_case "no .gitignore at all means no .env"
+rm "$REPO/.gitignore"
+run_hook >/dev/null
+[ -e "$REPO/.env" ] && fail ".env created in a repo with no .gitignore"
+
+new_case "a pattern that covers .env is enough"
+echo ".env*" > "$REPO/.gitignore"
+run_hook >/dev/null
+[ -f "$REPO/.env" ] || fail ".env not created although .env* ignores it"
+
+new_case "NEKO_SKILL_NO_ENV=1 turns .env creation off"
+out="$(echo '{}' | NEKO_SKILL_NO_ENV=1 NEKO_PROJECT_DIR="$REPO" bash "$HOOK")"
+[ -e "$REPO/.env" ] && fail ".env created with NEKO_SKILL_NO_ENV=1"
+[[ "$out" == *".env"* ]] && fail "mentioned .env although turned off: $out"
 [ -f "$REPO/AI_MEMORY.md" ] || fail "AI_MEMORY.md not created"
 
 # ── symlinks in the repo are never followed (#8) ─────────────────────────────

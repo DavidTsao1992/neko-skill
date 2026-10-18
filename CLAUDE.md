@@ -44,9 +44,12 @@ repo itself, versioned alongside the code.
 
 On every session start, the hook checks the launch directory for Python project markers
 (`requirements.txt`, `pyproject.toml`, `Pipfile`, `setup.py`, `.python-version`). If one is
-present and `.env` doesn't exist yet, it's created (mode 600) — copied from `.env.example` /
-`.env.sample` if either exists, otherwise created empty with a comment header. Non-Python
-projects and projects that already have a `.env` are left untouched.
+present, `.env` doesn't exist yet, and `git check-ignore` says Git would ignore it, it's
+created (mode 600) — copied from `.env.example` / `.env.sample` if either exists, otherwise
+created empty with a comment header. Non-Python projects and projects that already have a
+`.env` are left untouched. In a repo whose `.gitignore` doesn't cover `.env` it is skipped with
+a message: a secrets file Git would track is one `git add -A` from being committed (#9).
+`NEKO_SKILL_NO_ENV=1` turns `.env` creation off entirely.
 
 The hook acts only at the root of a Git work tree, and treats that directory as untrusted —
 it is often a clone nobody has read yet. It never follows a symlink: if `.env`,

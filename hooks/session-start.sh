@@ -4,7 +4,8 @@
 # Runs at the start of every Claude Code, Gemini CLI and Codex session, in
 # whatever directory the session was launched from. It is safe to run
 # repeatedly, and only ever acts at the root of a Git work tree:
-#   - creates .env only if this looks like a Python project and nothing named .env exists
+#   - creates .env only if this looks like a Python project, nothing named .env
+#     exists, and Git would ignore it (NEKO_SKILL_NO_ENV=1 turns this off)
 #   - creates AI_MEMORY.md only if nothing named AI_MEMORY.md exists
 set -uo pipefail
 
@@ -69,9 +70,14 @@ env_template() {
   done
 }
 
-if is_python_project; then
+# .env holds secrets, so it is only created where Git will not pick it up (#9):
+# in a repo whose .gitignore misses it, the next `git add -A` would commit
+# whatever gets filled in. NEKO_SKILL_NO_ENV=1 turns .env creation off entirely.
+if is_python_project && [ "${NEKO_SKILL_NO_ENV:-}" != "1" ]; then
   if ! absent ".env"; then
     [ -L ".env" ] && MESSAGES+=("Skipped .env: it is a symlink")
+  elif ! git check-ignore -q .env 2>/dev/null; then
+    MESSAGES+=("Skipped .env: it would not be git-ignored — add .env to .gitignore to have it created")
   else
     template="$(env_template)"
     case "$template" in
