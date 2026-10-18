@@ -19,6 +19,7 @@ project — nothing here is specific to one codebase.
 | `skills/gh-issues/` | `gh-issues` — breaks a feature request into atomic, dependency-ordered GitHub issues (`reference.md`: body template, sub-issue API) |
 | `skills/git-branch/` | `git-branch` — picks or creates the right branch before any edit (`reference.md`: the risk checklist) |
 | `legacy/claude-commands.sha256` | Hashes of the old `.claude/commands/*.md` files, so `install.sh` removes only unedited copies |
+| `scripts/package.sh`, `scripts/validate.sh` | Build `dist/<name>.zip` per marketplace listing (`repo-memory` is generated from memory-sync + memory-log) and check them — see README "Marketplace" |
 | `legacy/shipped.sha256` | Hashes of every skill and hook file released before the install manifest existed, so upgrading a stock copy makes no backup. Frozen. |
 | `hooks/session-start-gemini.sh` | JSON-output wrapper required by Gemini CLI hooks |
 | `tests/` | Plain-Bash tests for the hook and `install.sh` — `bash tests/run.sh` runs them all |

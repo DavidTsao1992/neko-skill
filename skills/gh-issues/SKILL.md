@@ -30,4 +30,4 @@ One self-contained change needs one issue — don't split what is already atomic
 8. **Group large sets.** Make a parent issue and attach the others as sub-issues — parent/child
    only. Never overwrite an issue body to add a reference: append to it.
 9. **Report** each issue as `#N — title (blocked by …)` with its URL, name what is ready to start,
-   and offer to record the breakdown with the `memory-log` skill.
+   and, if a `memory-log` or `repo-memory` skill is installed, offer to record the breakdown with it.

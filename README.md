@@ -94,6 +94,35 @@ Claude Code as `/memory-sync` and so on, in Gemini through `/skills`, and in Cod
 
 See [CLAUDE.md](CLAUDE.md) for implementation details.
 
+## Marketplace
+
+The skills are also packaged for skill marketplaces (Agensi), one ZIP per listing:
+
+```bash
+scripts/package.sh            # → dist/<name>.zip
+scripts/validate.sh dist/*.zip
+```
+
+A listing ships only the skill folder: `SKILL.md`, plus `reference/` where the skill has one.
+There is no installer, no hook and no settings change, so every listed skill works on its own,
+and suggests other skills only "if installed".
+
+| Listing | Built from | Notes |
+|---|---|---|
+| `repo-memory` | `memory-sync` + `memory-log` | One skill for the whole memory loop: load at the start, record at the end. Creates `AI_MEMORY.md` itself, without the hook. |
+| `git-branch` | `git-branch` | No dependencies. |
+| `gh-issues` | `gh-issues` | Needs the `gh` CLI. |
+| `python-venv` | `python-venv` | Needs pyenv, and stops without it. |
+| `test-smoke` | `test-smoke` | pytest or npm/yarn/pnpm. |
+
+`validate.sh` rejects a ZIP that:
+- holds anything but `SKILL.md` and `reference/*.md`;
+- has a frontmatter `name` that differs from the ZIP's, or a description that doesn't say when
+  to use it;
+- has a broken link;
+- mentions a home path, a private host, a token, or the installer or hook;
+- relies on another skill rather than suggesting it.
+
 ## License
 
 [MIT](LICENSE)

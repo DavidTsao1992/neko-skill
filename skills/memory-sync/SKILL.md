@@ -26,5 +26,5 @@ Load context from the current repository's local AI memory before starting a tas
    - entries marked `[Failed]` — failure patterns not to repeat;
    - entries marked `[In Progress]` — work that may already be underway elsewhere.
 3. If Purpose is empty or `TODO`, ask for a one-paragraph description of the project and write it in.
-4. If the task will change files, use the `git-branch` skill before the first edit.
+4. If the task will change files and a `git-branch` skill is installed, use it before the first edit.
 5. Present the summary concisely before starting — the goal is context, not recitation.
