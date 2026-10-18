@@ -41,8 +41,9 @@ for path in map(pathlib.Path, sys.argv[1:]):
         meta = dict(re.findall(r"^(\w[\w-]*):\s*(.*)$", m.group(1), re.M)) if m else {}
         if meta.get("name") != name:
             problems.append(f"frontmatter name is {meta.get('name')!r}, the ZIP is {name!r}")
-        if not meta.get("description", "").startswith("Use "):
-            problems.append("description must say when to use the skill ('Use when …' / 'Use at …')")
+        # It has to name a moment, not just say "Use this skill".
+        if not re.match(r"Use (when|whenever|at|before|after|during|while)\b", meta.get("description", "")):
+            problems.append("description must say when to use the skill ('Use when …', 'Use before …', 'Use at …')")
     for f, text in files.items():
         # Every shipped Markdown file's relative links, resolved from its own folder.
         for target in re.findall(r"\]\(([^)#\s]+)", text):
@@ -56,9 +57,11 @@ for path in map(pathlib.Path, sys.argv[1:]):
                 problems.append(f"{f} mentions {what}: {hit.group(0)!r}")
         # Another neko-skill skill may only be suggested, never relied on: the line
         # must make it conditional on that skill being installed, not on anything else.
+        # Any spelling counts — `git-branch`, git-branch, /git-branch.
         for line in text.splitlines():
             for other in OTHER_SKILLS - {name}:
-                if f"`{other}`" in line and not re.search(r"\binstalled\b", line):
+                mentioned = re.search(rf"(?<![\w-]){re.escape(other)}(?![\w-])", line)
+                if mentioned and not re.search(r"\binstalled\b", line):
                     problems.append(f"{f} relies on the {other} skill, which may not be installed: {line.strip()!r}")
     if problems:
         failures += 1

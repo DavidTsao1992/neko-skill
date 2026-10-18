@@ -51,7 +51,7 @@ first="$(cd "$DIST" && shasum -a 256 -- *.zip)"
 bad_zip() {  # bad_zip <name> <SKILL.md body> [extra file]
   local dir="$WORK/bad/$1"
   rm -rf "$dir" && mkdir -p "$dir"
-  printf -- '---\nname: %s\ndescription: Use when testing.\n---\n\n%s\n' "$1" "$2" > "$dir/SKILL.md"
+  printf -- '---\nname: %s\ndescription: %s\n---\n\n%s\n' "$1" "${DESC:-Use when testing.}" "$2" > "$dir/SKILL.md"
   [ -z "${3:-}" ] || echo x > "$dir/$3"
   rm -f "$WORK/bad/$1.zip"
   (cd "$dir" && zip -q -r "../$1.zip" .)
@@ -76,6 +76,9 @@ rejects "a Tailscale IPv6 address" demo "Reach it at fd7a:115c:a1e0:ab12:4843:cd
 rejects "a reference to the hook" demo "The SessionStart hook creates it."
 rejects "relying on another skill" demo "Then use the \`git-branch\` skill."
 rejects "relying on another skill under an unrelated if" demo "If the tree is dirty, use the \`git-branch\` skill."
+rejects "relying on another skill named without backticks" demo "Always invoke git-branch before editing."
+rejects "relying on another skill as a slash command" demo "Run /git-branch first."
+DESC="Use this skill." rejects "a description that names no moment" demo "Fine."
 rejects "a broken link" demo "See [notes](reference/missing.md)."
 rejects "an extra file" demo "Fine." "run.sh"
 
