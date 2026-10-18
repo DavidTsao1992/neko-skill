@@ -68,8 +68,11 @@ rejects "a Windows profile" demo 'Open C:\Users\alice\notes.md'
 rejects "a GitHub token" demo "token ghp_abcdefghijklmnopqrstuvwxyz0123456789"
 rejects "an OpenAI project key" demo "key sk-proj-abc_DEF-123456789012345678901234"
 rejects "an Anthropic key" demo "key sk-ant-api03-abcdefghijklmnopqrstuvwxyz"
+rejects "a temporary AWS key" demo "aws_access_key_id = ASIAABCDEFGHIJKLMNOP"
+rejects "a Tailscale IPv6 address" demo "Reach it at fd7a:115c:a1e0:ab12:4843:cd96:6240:4f12."
 rejects "a reference to the hook" demo "The SessionStart hook creates it."
 rejects "relying on another skill" demo "Then use the \`git-branch\` skill."
+rejects "relying on another skill under an unrelated if" demo "If the tree is dirty, use the \`git-branch\` skill."
 rejects "a broken link" demo "See [notes](reference/missing.md)."
 rejects "an extra file" demo "Fine." "run.sh"
 

@@ -14,9 +14,11 @@ import posixpath, re, sys, zipfile, pathlib
 
 FORBIDDEN = [
     (r"(?i)/Users/|/home/[^/\s]+/|/root/|\b[A-Z]:[\\/](Users|Documents and Settings)[\\/]", "an absolute home path"),
-    (r"\.ts\.net\b|\b100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.\d+\.\d+\b", "a private host (Tailscale)"),
-    # GitHub, OpenAI/Anthropic (sk-, sk-proj-, sk-ant-…, with - and _), AWS, Google, Slack.
-    (r"\b(gh[pousr]_[A-Za-z0-9]{20,}|github_pat_\w{20,}|sk-[A-Za-z0-9_-]{20,}|AKIA[0-9A-Z]{16}"
+    # MagicDNS names, and device addresses from 100.64.0.0/10 and fd7a:115c:a1e0::/48.
+    (r"(?i)\.ts\.net\b|\b100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.\d+\.\d+\b|\bfd7a:115c:a1e0:", "a private host (Tailscale)"),
+    # GitHub, OpenAI/Anthropic (sk-, sk-proj-, sk-ant-…, with - and _), AWS long-term
+    # (AKIA) and temporary STS (ASIA) access keys, Google, Slack.
+    (r"\b(gh[pousr]_[A-Za-z0-9]{20,}|github_pat_\w{20,}|sk-[A-Za-z0-9_-]{20,}|A(KI|SI)A[0-9A-Z]{16}"
      r"|AIza[0-9A-Za-z_-]{30,}|xox[abprs]-[A-Za-z0-9-]{10,})", "a token"),
     (r"install\.sh|SessionStart|\bhooks?\b", "the installer or the hook, which a listing does not ship"),
 ]
@@ -52,10 +54,11 @@ for path in map(pathlib.Path, sys.argv[1:]):
         for pattern, what in FORBIDDEN:
             for hit in re.finditer(pattern, text):
                 problems.append(f"{f} mentions {what}: {hit.group(0)!r}")
-        # Another neko-skill skill may only be suggested, never relied on.
+        # Another neko-skill skill may only be suggested, never relied on: the line
+        # must make it conditional on that skill being installed, not on anything else.
         for line in text.splitlines():
             for other in OTHER_SKILLS - {name}:
-                if f"`{other}`" in line and not re.search(r"\bif\b|installed", line):
+                if f"`{other}`" in line and not re.search(r"\binstalled\b", line):
                     problems.append(f"{f} relies on the {other} skill, which may not be installed: {line.strip()!r}")
     if problems:
         failures += 1
