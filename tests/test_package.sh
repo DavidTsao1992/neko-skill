@@ -40,10 +40,12 @@ skill="$(unzip -p "$DIST/repo-memory.zip" SKILL.md)"
   || fail "a section is missing"
 [[ "$skill" == *"\`memory-sync\`"* || "$skill" == *"memory-log skill"* ]] && fail "still refers to memory-sync / memory-log"
 
-new_case "the same sources build the same ZIPs"
+new_case "the same sources build the same ZIPs, whatever the umask"
 first="$(cd "$DIST" && shasum -a 256 -- *.zip)"
-bash "$ROOT/scripts/package.sh" "$DIST" >/dev/null
-[ "$(cd "$DIST" && shasum -a 256 -- *.zip)" = "$first" ] || fail "a rebuild changed the ZIPs"
+(umask 077 && bash "$ROOT/scripts/package.sh" "$DIST" >/dev/null)
+[ "$(cd "$DIST" && shasum -a 256 -- *.zip)" = "$first" ] || fail "a rebuild under umask 077 changed the ZIPs"
+(umask 022 && bash "$ROOT/scripts/package.sh" "$DIST" >/dev/null)
+[ "$(cd "$DIST" && shasum -a 256 -- *.zip)" = "$first" ] || fail "a rebuild under umask 022 changed the ZIPs"
 
 # validate.sh has to catch what it is for, not just pass clean input.
 bad_zip() {  # bad_zip <name> <SKILL.md body> [extra file]

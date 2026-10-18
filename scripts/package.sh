@@ -99,9 +99,12 @@ if [ -f "$DIST/.listings" ]; then
 fi
 : > "$DIST/.listings"
 
-# Fixed timestamps and no extra attributes, so the same sources give the same ZIP.
+# Fixed timestamps and modes and no extra attributes, so the same sources give the
+# same ZIP — zip records each file's Unix mode, which otherwise follows the umask.
 for dir in "$STAGE"/*/; do
   name="$(basename "$dir")"
+  find "$dir" -type d -exec chmod 755 {} +
+  find "$dir" -type f -exec chmod 644 {} +
   find "$dir" -exec touch -t 202601010000 {} +
   rm -f "$DIST/$name.zip"
   (cd "$dir" && find . -type f | sort | sed 's#^\./##' | zip -q -X -D "$DIST/$name.zip" -@)
