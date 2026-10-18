@@ -10,12 +10,14 @@ set -euo pipefail
 [ "$#" -gt 0 ] || { echo "usage: $0 <zip>..." >&2; exit 2; }
 
 python3 - "$@" <<'PYEOF'
-import re, sys, zipfile, pathlib
+import posixpath, re, sys, zipfile, pathlib
 
 FORBIDDEN = [
-    (r"/Users/|/home/[a-z]", "an absolute home path"),
+    (r"(?i)/Users/|/home/[^/\s]+/|/root/|\b[A-Z]:[\\/](Users|Documents and Settings)[\\/]", "an absolute home path"),
     (r"\.ts\.net\b|\b100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.\d+\.\d+\b", "a private host (Tailscale)"),
-    (r"\b(gh[pousr]_[A-Za-z0-9]{20,}|github_pat_\w{20,}|sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16})", "a token"),
+    # GitHub, OpenAI/Anthropic (sk-, sk-proj-, sk-ant-…, with - and _), AWS, Google, Slack.
+    (r"\b(gh[pousr]_[A-Za-z0-9]{20,}|github_pat_\w{20,}|sk-[A-Za-z0-9_-]{20,}|AKIA[0-9A-Z]{16}"
+     r"|AIza[0-9A-Za-z_-]{30,}|xox[abprs]-[A-Za-z0-9-]{10,})", "a token"),
     (r"install\.sh|SessionStart|\bhooks?\b", "the installer or the hook, which a listing does not ship"),
 ]
 OTHER_SKILLS = {"memory-sync", "memory-log", "git-branch", "gh-issues", "python-venv", "test-smoke", "repo-memory"}
@@ -39,10 +41,14 @@ for path in map(pathlib.Path, sys.argv[1:]):
             problems.append(f"frontmatter name is {meta.get('name')!r}, the ZIP is {name!r}")
         if not meta.get("description", "").startswith("Use "):
             problems.append("description must say when to use the skill ('Use when …' / 'Use at …')")
-        for target in re.findall(r"\]\(([^)#:]+)\)", skill):
-            if target not in files:
-                problems.append(f"SKILL.md links to {target}, which is not in the ZIP")
     for f, text in files.items():
+        # Every shipped Markdown file's relative links, resolved from its own folder.
+        for target in re.findall(r"\]\(([^)#\s]+)", text):
+            if re.match(r"[a-z][a-z0-9+.-]*:", target, re.I):
+                continue  # https:, mailto:, …
+            resolved = posixpath.normpath(posixpath.join(posixpath.dirname(f), target))
+            if resolved not in files:
+                problems.append(f"{f} links to {target}, which is not in the ZIP")
         for pattern, what in FORBIDDEN:
             for hit in re.finditer(pattern, text):
                 problems.append(f"{f} mentions {what}: {hit.group(0)!r}")

@@ -88,11 +88,23 @@ for name in "${LISTED[@]}"; do
 done
 stage_repo_memory
 
+# Remove the ZIPs the previous build made, so a listing that was renamed or dropped
+# doesn't linger in dist/ to be validated and uploaded. Only those: the list is
+# kept in dist/.listings, and nothing else in the directory is touched.
+if [ -f "$DIST/.listings" ]; then
+  while IFS= read -r old; do
+    case "$old" in */*|"") continue ;; esac
+    rm -f "$DIST/$old"
+  done < "$DIST/.listings"
+fi
+: > "$DIST/.listings"
+
 # Fixed timestamps and no extra attributes, so the same sources give the same ZIP.
 for dir in "$STAGE"/*/; do
   name="$(basename "$dir")"
   find "$dir" -exec touch -t 202601010000 {} +
   rm -f "$DIST/$name.zip"
   (cd "$dir" && find . -type f | sort | sed 's#^\./##' | zip -q -X -D "$DIST/$name.zip" -@)
+  echo "$name.zip" >> "$DIST/.listings"
   echo "✓ $DIST/$name.zip"
 done

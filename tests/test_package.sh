@@ -59,12 +59,36 @@ rejects() {  # rejects <case> <name> <body> [extra file]
   bad_zip "$2" "$3" "${4:-}"
   bash "$ROOT/scripts/validate.sh" "$WORK/bad/$2.zip" >/dev/null 2>&1 && fail "accepted it"
 }
-rejects "a home path" demo "Read /Users/someone/notes.md"
-rejects "a token" demo "token ghp_abcdefghijklmnopqrstuvwxyz0123456789"
+rejects "a macOS home path" demo "Read /Users/someone/notes.md"
+rejects "a Linux home path" demo "Read /home/Alice/notes.md"
+rejects "root's home" demo "Copy /root/.ssh/config"
+rejects "a Windows profile" demo 'Open C:\Users\alice\notes.md'
+rejects "a GitHub token" demo "token ghp_abcdefghijklmnopqrstuvwxyz0123456789"
+rejects "an OpenAI project key" demo "key sk-proj-abc_DEF-123456789012345678901234"
+rejects "an Anthropic key" demo "key sk-ant-api03-abcdefghijklmnopqrstuvwxyz"
 rejects "a reference to the hook" demo "The SessionStart hook creates it."
 rejects "relying on another skill" demo "Then use the \`git-branch\` skill."
 rejects "a broken link" demo "See [notes](reference/missing.md)."
 rejects "an extra file" demo "Fine." "run.sh"
+
+new_case "validate.sh checks links inside reference/ too"
+bad_zip demo "See [ref](reference/a.md)."
+mkdir -p "$WORK/bad/demo/reference"
+echo "Back to [the steps](../SKILL.md); see [b](b.md)." > "$WORK/bad/demo/reference/a.md"
+rm -f "$WORK/bad/demo.zip" && (cd "$WORK/bad/demo" && zip -q -r ../demo.zip .)
+bash "$ROOT/scripts/validate.sh" "$WORK/bad/demo.zip" >/dev/null 2>&1 && fail "accepted a broken link in reference/a.md"
+echo "Back to [the steps](../SKILL.md)." > "$WORK/bad/demo/reference/a.md"
+rm -f "$WORK/bad/demo.zip" && (cd "$WORK/bad/demo" && zip -q -r ../demo.zip .)
+bash "$ROOT/scripts/validate.sh" "$WORK/bad/demo.zip" >/dev/null 2>&1 || fail "rejected a valid ../SKILL.md link"
+
+new_case "a rebuild removes ZIPs of listings it no longer builds, and nothing else"
+echo "stale" > "$DIST/old-name.zip"
+echo "old-name.zip" >> "$DIST/.listings"
+echo "someone else's" > "$DIST/unrelated.zip"
+bash "$ROOT/scripts/package.sh" "$DIST" >/dev/null
+[ -e "$DIST/old-name.zip" ] && fail "the dropped listing's ZIP was left behind"
+[ -f "$DIST/unrelated.zip" ] || fail "a ZIP the script did not make was removed"
+rm -f "$DIST/unrelated.zip"
 
 new_case "validate.sh rejects a frontmatter name that is not the ZIP's"
 bad_zip demo "Fine."
