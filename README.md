@@ -28,11 +28,16 @@ cd neko-skill
 
 This installs all six workflows for each supported agent:
 
-| Agent | Skills or commands | SessionStart config |
+| Agent | Skills | SessionStart config |
 |---|---|---|
-| Claude Code | `~/.claude/commands/*.md` | `~/.claude/settings.json` |
-| Gemini CLI | `~/.gemini/skills/<name>/SKILL.md` | `~/.gemini/settings.json` |
-| Codex | `~/.agents/skills/<name>/SKILL.md` | `~/.codex/hooks.json` |
+| Claude Code | `~/.claude/skills/<name>/` | `~/.claude/settings.json` |
+| Gemini CLI | `~/.gemini/skills/<name>/` | `~/.gemini/settings.json` |
+| Codex | `~/.agents/skills/<name>/` | `~/.codex/hooks.json` |
+
+Every agent gets the same skill folders (`SKILL.md`, plus `reference.md` where a skill has one).
+Earlier versions installed Claude slash commands into `~/.claude/commands/`. Re-running
+`install.sh` removes those, but only copies that are byte-for-byte a version neko-skill shipped;
+an edited one is kept with a warning.
 
 It is safe to re-run and preserves unrelated settings without duplicating hook entries.
 Codex requires new or changed hooks to be reviewed once with `/hooks` before they run.
@@ -68,8 +73,9 @@ into a pyenv-backed `.venv` rather than system Python.
 `/gh-issues` takes a feature request, reviews what the repo already has, and files a set of
 atomic issues in dependency order — it shows the plan for approval before creating anything.
 
-Claude users invoke these as slash commands. Gemini and Codex select them automatically from a
-matching request, or you can activate/mention them explicitly using each tool's skill UI.
+All three agents pick a skill up from a matching request. You can also invoke one by name: in
+Claude Code as `/memory-sync` and so on, in Gemini through `/skills`, and in Codex as
+`$memory-sync`.
 
 See [CLAUDE.md](CLAUDE.md) for implementation details.
 

@@ -1,13 +1,14 @@
 ---
 name: memory-sync
-description: Load a repository's local AI_MEMORY.md context before starting work, including recent progress, failures, and in-progress tasks.
+description: Use at the start of a task in a repository, before making changes — loads the repo's local AI_MEMORY.md (purpose, recent log entries, known failures, work in progress) so earlier sessions' context and mistakes are not lost; creates the file if it is missing.
 ---
 
 # Memory Sync
 
 Load context from the current repository's local AI memory before starting a task.
 
-1. Look for `AI_MEMORY.md` in the project root. If it does not exist, create it with:
+1. Look for `AI_MEMORY.md` in the project root. If it is missing, create it and stop, so the
+   user can fill in the purpose:
 
    ```markdown
    # AI Memory — <repo name>
@@ -16,11 +17,14 @@ Load context from the current repository's local AI memory before starting a tas
    <!-- TODO -->
 
    ## Log
-   <!-- Newest entries first. -->
+   <!-- Newest entries first. Append with the memory-log skill. -->
    ```
 
-   Stop after creating the file so the user can fill in the project purpose.
-2. If it exists, summarize in at most 10 bullets: the purpose, the latest 5–8 entries, known `[Failed]` patterns, and `[In Progress]` work.
-3. If Purpose is empty or `TODO`, ask for a one-paragraph project description and write it there.
-4. If the task changes files, use the `git-branch` skill before the first edit.
-5. Present the summary concisely before starting work.
+2. If it exists, summarize it in at most 10 bullets:
+   - the purpose, in one line;
+   - the most recent 5–8 log entries;
+   - entries marked `[Failed]` — failure patterns not to repeat;
+   - entries marked `[In Progress]` — work that may already be underway elsewhere.
+3. If Purpose is empty or `TODO`, ask for a one-paragraph description of the project and write it in.
+4. If the task will change files, use the `git-branch` skill before the first edit.
+5. Present the summary concisely before starting — the goal is context, not recitation.

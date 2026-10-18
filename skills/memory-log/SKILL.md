@@ -1,12 +1,19 @@
 ---
 name: memory-log
-description: Record a completed, failed, or in-progress task in the current repository's AI_MEMORY.md using a timestamped newest-first entry.
+description: Use after finishing, failing, or pausing a task in a repository — records it as one timestamped, newest-first line in the repo's AI_MEMORY.md, with the single most useful note for the next session.
 ---
 
 # Memory Log
 
-1. If `AI_MEMORY.md` is missing, create the skeleton described by `memory-sync`.
-2. Infer from context: Status (`Done`, `Failed`, or `In Progress`), a one-line Summary, and one genuinely useful Note. Omit the note when there is nothing non-obvious.
+1. If `AI_MEMORY.md` is missing from the project root, create the skeleton described by the
+   `memory-sync` skill first.
+2. Infer from the conversation, and ask only if genuinely missing:
+   - **Status**: `Done`, `Failed`, or `In Progress`
+   - **Summary**: one line — what was done
+   - **Notes**: the single most useful thing for a future agent — a failure's root cause, a
+     gotcha, a workaround, or "this works because X". Omit it when there is nothing non-obvious;
+     don't pad.
 3. Get the timestamp with `date +"%Y-%m-%dT%H:%M:%S%z"`.
-4. Insert directly below `## Log`, newest first: `- <timestamp> — [Status] Summary (— Notes, if any)`.
-5. Show the inserted line for verification.
+4. Insert one line directly below `## Log`, newest first:
+   `- <timestamp> — [Status] Summary (— Notes, if any)`
+5. Show the inserted line so the user can verify it.

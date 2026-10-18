@@ -1,0 +1,11 @@
+# sha256 of every version of .claude/commands/<name>.md this repo ever shipped.
+# install.sh removes an installed ~/.claude/commands/<name>.md only when its hash is listed
+# here, so a command the user wrote or edited is never deleted (#12).
+7e2d020b9a9c6070538d1876e4967eadba3099ae34d87e6657ffac8a20bb3e7f  gh-issues
+98cfa8835eac062144f002e35f1745f1adb616a613a4d31f38c51e98e0e10aa9  git-branch
+706c901a8f33f4fffcca315a16cb47b973a3377e701da3c56ad5eceae598be34  memory-log
+901e8a1bf18b838ab94c8fb6028854009235e0ee17b812f3d1e49b020e3fc5bd  memory-sync
+fb96d812c802ccb51254bb789798eb4033f96bb37cb81bdb56f5b9d44ea9002e  memory-sync
+361dc5d26ba0ee142f7567f7a22934699717bc2fc4209a311b049e9eca95c57f  python-venv
+5b202e4e2b75c92121fd6ca766a950e681ceb118309c45512977497c2042628b  test-smoke
+88c29ba1bdbb15faa425b211a28da6fda37e58e118b50e6dbe210beffdb251a8  test-smoke

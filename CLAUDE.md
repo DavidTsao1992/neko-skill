@@ -12,13 +12,13 @@ project — nothing here is specific to one codebase.
 |------|---------|
 | `install.sh` | One-command setup — checks `pyenv`/`python3`, installs skills globally, registers the SessionStart hook |
 | `hooks/session-start.sh` | Runs at every Claude Code, Gemini CLI and Codex session start; at the root of a Git work tree, creates `.env` (Python projects only) and `AI_MEMORY.md` if missing |
-| `.claude/commands/memory-sync.md` | `/memory-sync` — reads the current repo's `AI_MEMORY.md` before starting a task |
-| `.claude/commands/memory-log.md` | `/memory-log` — appends a timestamped entry to `AI_MEMORY.md` after a task |
-| `.claude/commands/test-smoke.md` | `/test-smoke` — auto-detects and runs the current repo's test suite |
-| `.claude/commands/python-venv.md` | `/python-venv` — ensures Python code runs in a pyenv-backed `.venv`, never system Python |
-| `.claude/commands/gh-issues.md` | `/gh-issues` — breaks a feature request into atomic, dependency-ordered GitHub issues |
-| `.claude/commands/git-branch.md` | `/git-branch` — picks or creates the right branch before any edit |
-| `skills/*/SKILL.md` | Native Gemini and Codex packages for the same six workflows |
+| `skills/memory-sync/` | `memory-sync` — reads the current repo's `AI_MEMORY.md` before starting a task |
+| `skills/memory-log/` | `memory-log` — appends a timestamped entry to `AI_MEMORY.md` after a task |
+| `skills/test-smoke/` | `test-smoke` — auto-detects and runs the current repo's test suite |
+| `skills/python-venv/` | `python-venv` — ensures Python code runs in a pyenv-backed `.venv`, never system Python |
+| `skills/gh-issues/` | `gh-issues` — breaks a feature request into atomic, dependency-ordered GitHub issues (`reference.md`: body template, sub-issue API) |
+| `skills/git-branch/` | `git-branch` — picks or creates the right branch before any edit (`reference.md`: the risk checklist) |
+| `legacy/claude-commands.sha256` | Hashes of the old `.claude/commands/*.md` files, so `install.sh` removes only unedited copies |
 | `hooks/session-start-gemini.sh` | JSON-output wrapper required by Gemini CLI hooks |
 | `tests/` | Plain-Bash tests for the hook and `install.sh` — `bash tests/run.sh` runs them all |
 | `.github/workflows/ci.yml` | `shellcheck` plus the tests on Ubuntu and macOS, for every PR |
@@ -81,10 +81,11 @@ rather than a layer ("add the model", "add the view"). It reads the existing cod
 doesn't file work that's already done, builds a DAG of what blocks what, and shows the plan for
 approval before creating anything.
 
-Issues are created in topological order, blockers first, so every `Blocked by: #N` reference
-points at a number that already exists — no second pass needed. Only the reverse `Blocks:` links
-are backfilled afterwards. GitHub's public API models parent/child sub-issues (`addSubIssue`)
-but has no blocked-by mutation, so dependencies live in the issue body as text.
+Issues are created in topological order, blockers first, so every dependency points at a number
+that already exists. Dependencies are GitHub's native blocked-by relationships
+(`gh issue create --blocked-by`), which show on both issues with no backfill; with an older `gh`
+they fall back to body text, appended to the existing body, never replacing it. Parent/child
+grouping uses sub-issues.
 
 ---
 
@@ -112,6 +113,9 @@ first commit — deciding late means rewriting history to correct it.
 ## Development rules for this repo
 
 - Skills are prompts, not code — keep them concise; token cost matters every time they load.
+  `skills/<name>/SKILL.md` is the only copy of each one, for all three agents: steps in
+  SKILL.md, long reference material in a `reference.md` beside it that SKILL.md links to.
+  Descriptions say *when* to use the skill ("Use when …"), since agents select skills by them.
 - `install.sh` must stay idempotent: re-running it should never duplicate hooks or clobber
   unrelated Claude, Gemini, or Codex settings.
   `tests/test_install.sh` checks both; keep it passing.

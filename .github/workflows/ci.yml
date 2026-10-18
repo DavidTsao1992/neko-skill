@@ -30,5 +30,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          # test_install.sh takes old command files from history (#12).
+          fetch-depth: 0
       - name: Tests
         run: bash tests/run.sh

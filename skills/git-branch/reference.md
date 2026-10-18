@@ -1,51 +1,6 @@
-Decide which branch to work on before writing any code, and create one when the work is new.
+# Git branch selection — risks to check
 
-## When this applies
-
-Before the first edit of any task that changes files. Deciding this *after* committing means
-rewriting history to fix it, so do it first.
-
-## Steps
-
-1. **Establish the real state.** Run these before deciding anything — a stale local view is the
-   most common cause of a wrong call:
-
-   ```bash
-   git fetch origin --prune
-   git status --short --branch     # dirty files, ahead/behind, detached HEAD
-   git branch -vv                  # local branches + their upstreams
-   gh pr status                    # PRs for the current branch, if gh is available
-   ```
-
-2. **Route the task.** Three cases only:
-
-   - **New development** → always a new branch off the latest default branch. Never start new
-     work on the branch of an unrelated feature, and never on the default branch itself.
-
-     ```bash
-     git checkout -b <type>/<short-slug> origin/<default-branch>
-     ```
-
-     Match the naming convention already in use — read `git branch -r` rather than imposing a
-     scheme. Get the default branch from `gh repo view --json defaultBranchRef -q .defaultBranchRef.name`;
-     don't assume `main`.
-
-   - **Fixing a bug in work that is still unmerged** → stay on that branch and add commits to it.
-     Its PR updates automatically on push. Don't open a second branch to patch a first one unless
-     the user asks for a stacked PR.
-
-   - **Fixing a bug that exists independently of the unmerged work** → new branch off the default
-     branch, not off the feature branch. Piling it onto the feature branch makes an urgent fix
-     wait on an unrelated review. Ask yourself: does this bug reproduce on the default branch? If
-     yes, it isn't part of that feature's work.
-
-3. **Confirm before reusing a branch.** State which branch you're about to use and why, and check
-   the risks below. If the choice is genuinely ambiguous, ask — branching costs nothing, while
-   committing to the wrong branch is expensive to undo.
-
----
-
-## Risks to check before committing to a branch
+Read before reusing an existing branch (step 3 of SKILL.md).
 
 **The branch looks unmerged but isn't.** `git branch --merged` misses squash- and rebase-merged
 branches, because the merged commits have different SHAs. Adding commits to such a branch replays
@@ -94,10 +49,3 @@ or coordinate.
 **Unrelated work already sitting on the branch.** If the branch contains commits outside this
 task's scope, the resulting PR is unreviewable. Branch off the default branch and let the
 unrelated work ship separately.
-
----
-
-## Report
-
-Before starting the work, state in one or two lines: the branch you're on, whether you created it
-or reused it, what it's based on, and any risk above that applied and how you resolved it.

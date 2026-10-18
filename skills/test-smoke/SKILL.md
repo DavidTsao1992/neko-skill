@@ -1,11 +1,20 @@
 ---
 name: test-smoke
-description: Detect and run a repository's Python or Node test suite, then report a concise pass, fail, or skip result.
+description: Use when asked to run the tests or check that a Python or Node repository still works — detects the test runner (pytest, or npm/yarn/pnpm test), runs it, and reports a one-line pass, fail, or skip result.
 ---
 
 # Smoke Test
 
-1. Detect the runner. For Python with pytest configuration or `tests/`, use the active project virtual environment and run `python -m pytest -v --tb=short`. For Node with a test script, use the package manager indicated by the lockfile. If neither applies, report no runner and do not guess.
-2. Capture the summary. On failure, include the first failing test and error.
-3. Report `Pass`, `Fail`, or `Skip` (only when every test skipped and none failed).
-4. Offer to use `memory-log` only when the run surfaced something notable; never log routine smoke runs automatically.
+1. Detect the runner, in this order:
+   - **Python**: pytest is available and there is a `tests/` directory, `pytest.ini`, or
+     `[tool.pytest.ini_options]` in `pyproject.toml` → run `python -m pytest -v --tb=short` with
+     the project's virtual environment (see the `python-venv` skill).
+   - **Node**: `package.json` has a `test` script → `npm test`, or `yarn test` / `pnpm test` when
+     `yarn.lock` / `pnpm-lock.yaml` is present instead of `package-lock.json`.
+   - Otherwise say no test runner was detected and stop — don't guess.
+2. Capture the summary line (e.g. "5 passed, 1 failed in 3.2s") and, on failure, the first failing
+   test and its error.
+3. Report `Pass`, `Fail`, or `Skip` (only when every test was skipped and none failed), with the
+   summary line.
+4. Offer to record it with the `memory-log` skill only when the run surfaced something notable —
+   a new failure, or a fix confirmed. Never log routine runs automatically.
