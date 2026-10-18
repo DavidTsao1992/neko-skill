@@ -1,0 +1,26 @@
+# sha256 of every version of an installed file that neko-skill released before install.sh
+# kept a manifest (#13). A file at an install location whose hash is listed here for its
+# source path is a stock copy, so it is upgraded without a backup. Frozen: newer installs are
+# tracked by the manifest instead.
+ec9b7f1a784c3e273149aca5436e555cccfb9d9cc3d358a061a33685969b44c4  hooks/session-start-gemini.sh
+18705326fb0bd21146a14ade162933248172e8f7c8c728e29439bf2fce4147c6  hooks/session-start.sh
+38e2cee13cbde07004d2755e98df2dd5072e2ece4e912ef0b32011013d0658c9  hooks/session-start.sh
+617579534e420cfc54398cf37248d86aa56ae41ff949587b2f26894b666ec034  hooks/session-start.sh
+766925804da686f00cd496b2e73afb7dc33d5a5d15aacff67a2881d13da0ca99  hooks/session-start.sh
+c8225c157e11e5db15055581808232ba6f336db62e09fa89d20d00e3a02480cc  hooks/session-start.sh
+bf601c88794cf9c345444a28eab6850951c1cacb5a4710613029c3c9f917303d  skills/gh-issues/reference.md
+c51af6dbd8030dd478d2e3847e2768266023b2a70f6a854a914f32d8e2012b1c  skills/gh-issues/reference.md
+26734c0f40fbdc80a921f87b7bf798720573ea29396803ec063873c193418645  skills/gh-issues/SKILL.md
+541ab5daaeccbad24d3241de79d9d201be4f38d19a9558d968e5b17f052d47c1  skills/gh-issues/SKILL.md
+fa449e393d8e32a6f9aec9be665b5af82911bc55c9c08eda1fdaea973b55714f  skills/gh-issues/SKILL.md
+c12109d56cb0e9a644ac4f4dc02ff5299d5f796b47ac5851c450cf10f0f2b14f  skills/git-branch/reference.md
+13e451772c66214943c77eb772789a25a42992e8e7b659a6b0436e86d0111c4d  skills/git-branch/SKILL.md
+49f74414077151211f4ab6bb5cf8fea94d3d886e5249240898437974d899cea6  skills/git-branch/SKILL.md
+356e8462340240818a7e0ac388731adc0ceed435456e7f753a5ea7f308b9afeb  skills/memory-log/SKILL.md
+b67016bb7ab6e539feb6477754ef46016860eb4bc74014983b37ede8309af0fa  skills/memory-log/SKILL.md
+ed339e890ef0115de58c9e3fafca76a9171d64082e06edabd3c0e6a0186bc17e  skills/memory-sync/SKILL.md
+fdca4c7e05442deac3d56651f13d4f83f067ab9d2f8a8159f82690bdc3ddd53b  skills/memory-sync/SKILL.md
+8b899ac899918e144f9d4fcbcf37575ad542a20fd1c00b2fac82084ccba9b20f  skills/python-venv/SKILL.md
+8dfc8555c6155446bae4a0db086e097e56852b266d9f5f642830d8c6620fe450  skills/python-venv/SKILL.md
+c5a1315626291cc5c22cf574f37df0ad09917f284e6183eb75a3f219e96cf193  skills/test-smoke/SKILL.md
+eefdeb3dfc667105c7e8a5274a27ed0fcd7ace10caeb6a945f5ae37675ea76d2  skills/test-smoke/SKILL.md

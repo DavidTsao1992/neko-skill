@@ -19,6 +19,7 @@ project — nothing here is specific to one codebase.
 | `skills/gh-issues/` | `gh-issues` — breaks a feature request into atomic, dependency-ordered GitHub issues (`reference.md`: body template, sub-issue API) |
 | `skills/git-branch/` | `git-branch` — picks or creates the right branch before any edit (`reference.md`: the risk checklist) |
 | `legacy/claude-commands.sha256` | Hashes of the old `.claude/commands/*.md` files, so `install.sh` removes only unedited copies |
+| `legacy/shipped.sha256` | Hashes of every skill and hook file released before the install manifest existed, so upgrading a stock copy makes no backup. Frozen. |
 | `hooks/session-start-gemini.sh` | JSON-output wrapper required by Gemini CLI hooks |
 | `tests/` | Plain-Bash tests for the hook and `install.sh` — `bash tests/run.sh` runs them all |
 | `.github/workflows/ci.yml` | `shellcheck` plus the tests on Ubuntu and macOS, for every PR |
@@ -117,7 +118,10 @@ first commit — deciding late means rewriting history to correct it.
   SKILL.md, long reference material in a `reference.md` beside it that SKILL.md links to.
   Descriptions say *when* to use the skill ("Use when …"), since agents select skills by them.
 - `install.sh` must stay idempotent: re-running it should never duplicate hooks or clobber
-  unrelated Claude, Gemini, or Codex settings.
+  unrelated Claude, Gemini, or Codex settings. Every file it writes goes through
+  `install_file`, which backs up a user-edited copy to `.bak` before replacing it and records
+  the new file in the manifest (`$XDG_STATE_HOME/neko-skill/installed.sha256`).
+  `--uninstall` removes exactly what that manifest lists, plus the hook registrations.
   `tests/test_install.sh` checks both; keep it passing.
 - Run `bash tests/run.sh` and `shellcheck install.sh hooks/*.sh tests/*.sh` before pushing —
   CI runs the same.

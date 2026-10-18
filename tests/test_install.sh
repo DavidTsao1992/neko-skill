@@ -23,9 +23,14 @@ new_case() {
   mkdir -p "$HOME_DIR"
 }
 
-install() {
-  HOME="$HOME_DIR" bash "$ROOT/install.sh" >"$WORK/$CASES/install.log" 2>&1 \
-    || fail "install.sh exited non-zero: $(tail -3 "$WORK/$CASES/install.log")"
+install() {  # install [args…] — output in $WORK/$CASES/install.log
+  env -u XDG_STATE_HOME HOME="$HOME_DIR" bash "$ROOT/install.sh" "$@" >"$WORK/$CASES/install.log" 2>&1 \
+    || fail "install.sh $* exited non-zero: $(tail -3 "$WORK/$CASES/install.log")"
+}
+
+# A settings file as canonical JSON, so formatting differences don't count.
+canonical() {
+  python3 -c 'import json,sys; print(json.dumps(json.load(open(sys.argv[1])), sort_keys=True))' "$1"
 }
 
 # Number of SessionStart hook entries running `command` in a settings file.
@@ -100,6 +105,93 @@ install
 [ -f "$HOME_DIR/.claude/commands/git-branch.md" ] || fail "user-edited git-branch command was deleted"
 [ -f "$HOME_DIR/.claude/commands/deploy.md" ] || fail "an unrelated command was deleted"
 grep -q "kept $HOME_DIR/.claude/commands/git-branch.md" "$WORK/$CASES/install.log" || fail "no warning about the kept command"
+
+# ── the user's edits are never silently overwritten (#13) ────────────────────
+
+new_case "an edited skill is backed up before it is replaced, and the output says so"
+install
+skill="$HOME_DIR/.claude/skills/git-branch/SKILL.md"
+echo "my own rule" >> "$skill"
+edited="$(cat "$skill")"
+install
+[ "$(cat "$skill.bak" 2>/dev/null)" = "$edited" ] || fail "the edited copy was not kept as SKILL.md.bak"
+cmp -s "$skill" "$ROOT/skills/git-branch/SKILL.md" || fail "the skill was not updated"
+grep -q "$skill.bak" "$WORK/$CASES/install.log" || fail "the output does not mention the backup"
+
+new_case "a second backup does not overwrite the first"
+install
+skill="$HOME_DIR/.claude/skills/git-branch/SKILL.md"
+echo "edit one" >> "$skill"; install
+echo "edit two" >> "$skill"; install
+[ "$(find "$HOME_DIR/.claude/skills/git-branch" -name 'SKILL.md.bak*' | wc -l | tr -d ' ')" = 2 ] \
+  || fail "expected two backups: $(ls "$HOME_DIR/.claude/skills/git-branch")"
+
+new_case "a backup never replaces an earlier one, whatever names are taken"
+install
+skill="$HOME_DIR/.claude/skills/git-branch/SKILL.md"
+echo "old backup" > "$skill.bak"
+echo "older backup" > "$skill.bak.1"
+echo "edit" >> "$skill"; install
+if [ "$(cat "$skill.bak")" != "old backup" ] || [ "$(cat "$skill.bak.1")" != "older backup" ]; then
+  fail "an existing backup was replaced"
+fi
+grep -q "^edit$" "$skill.bak.2" 2>/dev/null || fail "the new backup is not at SKILL.md.bak.2"
+
+new_case "a file a previous install wrote but this release dropped is cleaned up"
+install
+manifest="$HOME_DIR/.local/state/neko-skill/installed.sha256"
+for name in old-skill edited-skill; do
+  mkdir -p "$HOME_DIR/.claude/skills/$name"
+  echo "shipped once" > "$HOME_DIR/.claude/skills/$name/SKILL.md"
+  printf '%s  %s\n' "$(python3 -c 'import hashlib,sys;print(hashlib.sha256(open(sys.argv[1],"rb").read()).hexdigest())' \
+    "$HOME_DIR/.claude/skills/$name/SKILL.md")" "$HOME_DIR/.claude/skills/$name/SKILL.md" >> "$manifest"
+done
+echo "my change" >> "$HOME_DIR/.claude/skills/edited-skill/SKILL.md"
+install
+[ -e "$HOME_DIR/.claude/skills/old-skill" ] && fail "the dropped, unchanged file was left behind"
+[ -f "$HOME_DIR/.claude/skills/edited-skill/SKILL.md" ] || fail "a dropped file the user changed was removed"
+grep -q "kept $HOME_DIR/.claude/skills/edited-skill/SKILL.md" "$WORK/$CASES/install.log" || fail "no message about the kept file"
+grep -q "old-skill" "$manifest" && fail "the dropped file is still in the manifest"
+
+new_case "unchanged installs are upgraded without backups"
+install
+install
+[ -z "$(find "$HOME_DIR" -name '*.bak*')" ] || fail "re-install made backups: $(find "$HOME_DIR" -name '*.bak*')"
+
+new_case "a stock copy from an earlier release is upgraded without a backup"
+mkdir -p "$HOME_DIR/.gemini/skills/git-branch" "$HOME_DIR/.claude/hooks"
+git -C "$ROOT" show 4245472:skills/git-branch/SKILL.md > "$HOME_DIR/.gemini/skills/git-branch/SKILL.md"
+git -C "$ROOT" show 4245472:hooks/session-start.sh > "$HOME_DIR/.claude/hooks/neko-skill-session-start.sh"
+install
+[ -z "$(find "$HOME_DIR" -name '*.bak*')" ] || fail "backed up a stock copy: $(find "$HOME_DIR" -name '*.bak*')"
+cmp -s "$HOME_DIR/.gemini/skills/git-branch/SKILL.md" "$ROOT/skills/git-branch/SKILL.md" || fail "not upgraded"
+
+# ── --uninstall removes exactly what install.sh added (#13) ──────────────────
+
+new_case "--uninstall restores the settings and removes the files"
+mkdir -p "$HOME_DIR/.claude" "$HOME_DIR/.codex"
+echo '{"model": "opus", "hooks": {"SessionStart": [{"hooks": [{"type": "command", "command": "mine"}]}]}}' \
+  > "$HOME_DIR/.claude/settings.json"
+echo '{"hooks": {"SessionStart": [{"matcher": "startup", "hooks": [{"type": "command", "command": "other"}]}]}}' \
+  > "$HOME_DIR/.codex/hooks.json"
+claude_before="$(canonical "$HOME_DIR/.claude/settings.json")"
+codex_before="$(canonical "$HOME_DIR/.codex/hooks.json")"
+install
+echo "my note" > "$HOME_DIR/.claude/skills/memory-log/notes.md"
+install --uninstall
+[ "$(canonical "$HOME_DIR/.claude/settings.json")" = "$claude_before" ] || fail "Claude settings differ after uninstall"
+[ "$(canonical "$HOME_DIR/.codex/hooks.json")" = "$codex_before" ] || fail "Codex hooks differ after uninstall"
+[ "$(canonical "$HOME_DIR/.gemini/settings.json")" = "{}" ] || fail "Gemini settings left non-empty: $(cat "$HOME_DIR/.gemini/settings.json")"
+left="$(find "$HOME_DIR" -type f \( -name 'SKILL.md' -o -name 'reference.md' -o -name 'neko-skill-*' -o -name 'installed.sha256' \))"
+[ -z "$left" ] || fail "files left after uninstall: $left"
+[ -f "$HOME_DIR/.claude/skills/memory-log/notes.md" ] || fail "uninstall removed a file it did not install"
+
+new_case "--uninstall keeps a file edited after install"
+install
+echo "edited" >> "$HOME_DIR/.agents/skills/test-smoke/SKILL.md"
+install --uninstall
+[ -f "$HOME_DIR/.agents/skills/test-smoke/SKILL.md" ] || fail "an edited skill was removed"
+grep -q "kept $HOME_DIR/.agents/skills/test-smoke/SKILL.md" "$WORK/$CASES/install.log" || fail "no message about the kept file"
 
 # ── unrelated settings survive ───────────────────────────────────────────────
 

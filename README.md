@@ -39,8 +39,23 @@ Earlier versions installed Claude slash commands into `~/.claude/commands/`. Re-
 `install.sh` removes those, but only copies that are byte-for-byte a version neko-skill shipped;
 an edited one is kept with a warning.
 
-It is safe to re-run and preserves unrelated settings without duplicating hook entries.
+It is safe to re-run: it preserves unrelated settings and never duplicates hook entries. It
+never silently overwrites your edits either. If you changed an installed skill or hook, your
+version is moved to `<file>.bak` before the new one goes in, and the installer lists every
+backup it made. What it installed is recorded in `~/.local/state/neko-skill/installed.sha256`
+(`$XDG_STATE_HOME` if set).
+
 Codex requires new or changed hooks to be reviewed once with `/hooks` before they run.
+
+### Uninstall
+
+```bash
+./install.sh --uninstall
+```
+
+This removes exactly what `install.sh` added: the files in its record, and its SessionStart
+entries in the three settings files. Other settings, other hooks, `.bak` backups, and any
+installed file you edited afterwards are left alone.
 
 ## What the hook writes
 
