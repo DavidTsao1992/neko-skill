@@ -81,10 +81,11 @@ rather than a layer ("add the model", "add the view"). It reads the existing cod
 doesn't file work that's already done, builds a DAG of what blocks what, and shows the plan for
 approval before creating anything.
 
-Issues are created in topological order, blockers first, so every `Blocked by: #N` reference
-points at a number that already exists — no second pass needed. Only the reverse `Blocks:` links
-are backfilled afterwards. GitHub's public API models parent/child sub-issues (`addSubIssue`)
-but has no blocked-by mutation, so dependencies live in the issue body as text.
+Issues are created in topological order, blockers first, so every dependency points at a number
+that already exists. Dependencies are GitHub's native blocked-by relationships
+(`gh issue create --blocked-by`), which show on both issues with no backfill; with an older `gh`
+they fall back to body text, appended to the existing body, never replacing it. Parent/child
+grouping uses sub-issues.
 
 ---
 

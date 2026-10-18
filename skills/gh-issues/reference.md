@@ -22,13 +22,25 @@ Why this is needed, one short paragraph. Link the code it touches.
 Blocked by: #12, #13
 ```
 
-Create with `gh issue create --title "..." --body-file - --label "..."`, piping the body through a
-heredoc so the Markdown survives intact. Record each returned number before creating the next.
+Create with `gh issue create --title "..." --body-file - --label "..." --blocked-by 12,13`, piping
+the body through a heredoc so the Markdown survives intact. Record each returned number before
+creating the next.
 
-## Back-references
+## Dependencies
 
-After all issues exist, add `Blocks: #N` to each blocker with `gh issue edit <n> --body-file -`,
-so the graph can be followed from both ends.
+GitHub tracks blocked-by / blocking natively, and shows both directions on each issue.
+
+- **When `gh issue create --help` lists `--blocked-by`:** pass `--blocked-by` when
+  creating, or add one later with `gh issue edit <n> --add-blocked-by <m>`. There is nothing to
+  backfill: the blocker shows "Blocking" by itself.
+- **Otherwise (older gh):** keep the `Blocked by` line in the body, and add `Blocks: #N` to each blocker
+  afterwards **by appending to its current body**. `gh issue edit --body-file` *replaces* the
+  whole body, so piping in only the new line erases Context, Scope and Acceptance criteria:
+
+  ```bash
+  { gh issue view <n> --json body -q .body; printf '\nBlocks: #%s\n' <m>; } \
+    | gh issue edit <n> --body-file -
+  ```
 
 ## Parent issue and sub-issues
 
@@ -38,5 +50,4 @@ gh api graphql -f query='mutation($p:ID!,$u:String!){addSubIssue(input:{issueId:
   -f p="$PARENT_ID" -f u="https://github.com/<owner>/<repo>/issues/<child>"
 ```
 
-GitHub has no public API for blocked-by dependencies; sub-issues are the only relationship it
-models, so use them for parent/child only and keep dependencies in the body text.
+Use sub-issues for parent/child only; dependencies between siblings are blocked-by relationships.

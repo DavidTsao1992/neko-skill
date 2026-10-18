@@ -24,10 +24,10 @@ One self-contained change needs one issue — don't split what is already atomic
    topologically and note which issues can run in parallel.
 6. **Show the plan and wait for explicit approval** — a table of title, depends-on and one-line
    scope. Creating issues is public and noisy to undo; never skip this.
-7. **Create blockers first**, so every `Blocked by` points at an issue that already exists. Use
-   the repo's template, or the body structure in [reference.md](reference.md).
-8. **Wire back-references.** Add `Blocks: #N` to each blocker afterwards. For a large set, make a
-   parent issue and attach real sub-issues ([reference.md](reference.md)) — parent/child only;
-   blocked-by lives in the body text.
+7. **Create blockers first**, so every dependency points at an issue that already exists. Use the
+   repo's template, or the body structure in [reference.md](reference.md), and record
+   dependencies as GitHub blocked-by relationships ([reference.md](reference.md)).
+8. **Group large sets.** Make a parent issue and attach the others as sub-issues — parent/child
+   only. Never overwrite an issue body to add a reference: append to it.
 9. **Report** each issue as `#N — title (blocked by …)` with its URL, name what is ready to start,
    and offer to record the breakdown with the `memory-log` skill.
