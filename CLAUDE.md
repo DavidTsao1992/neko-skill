@@ -11,7 +11,7 @@ project — nothing here is specific to one codebase.
 | File | Purpose |
 |------|---------|
 | `install.sh` | One-command setup — checks `pyenv`/`python3`, installs skills globally, registers the SessionStart hook |
-| `hooks/session-start.sh` | Runs at every Claude Code session start; creates `.env` (Python projects only) and `AI_MEMORY.md` if missing |
+| `hooks/session-start.sh` | Runs at every Claude Code, Gemini CLI and Codex session start; at the root of a Git work tree, creates `.env` (Python projects only) and `AI_MEMORY.md` if missing |
 | `.claude/commands/memory-sync.md` | `/memory-sync` — reads the current repo's `AI_MEMORY.md` before starting a task |
 | `.claude/commands/memory-log.md` | `/memory-log` — appends a timestamped entry to `AI_MEMORY.md` after a task |
 | `.claude/commands/test-smoke.md` | `/test-smoke` — auto-detects and runs the current repo's test suite |
@@ -20,6 +20,7 @@ project — nothing here is specific to one codebase.
 | `.claude/commands/git-branch.md` | `/git-branch` — picks or creates the right branch before any edit |
 | `skills/*/SKILL.md` | Native Gemini and Codex packages for the same six workflows |
 | `hooks/session-start-gemini.sh` | JSON-output wrapper required by Gemini CLI hooks |
+| `tests/test_session_start.sh` | Tests for the hook — run `bash tests/test_session_start.sh` |
 
 ---
 
@@ -43,9 +44,15 @@ repo itself, versioned alongside the code.
 
 On every session start, the hook checks the launch directory for Python project markers
 (`requirements.txt`, `pyproject.toml`, `Pipfile`, `setup.py`, `.python-version`). If one is
-present and `.env` doesn't exist yet, it's created — copied from `.env.example` /
+present and `.env` doesn't exist yet, it's created (mode 600) — copied from `.env.example` /
 `.env.sample` if either exists, otherwise created empty with a comment header. Non-Python
 projects and projects that already have a `.env` are left untouched.
+
+The hook acts only at the root of a Git work tree, and treats that directory as untrusted —
+it is often a clone nobody has read yet. It never follows a symlink: if `.env`,
+`AI_MEMORY.md`, `.env.example` or `.env.sample` is a link (or not a plain file), it skips that
+file and says so, and it creates files with `noclobber` so a link that appears mid-run makes
+the write fail rather than land outside the repo (#8).
 
 `install.sh` separately checks whether `pyenv` is installed (informational only — it warns
 but doesn't fail, since not every project needs Python).
@@ -107,3 +114,6 @@ first commit — deciding late means rewriting history to correct it.
   service. If you're tempted to hardcode one, it belongs in the target repo's own
   `AI_MEMORY.md`, not here.
 - Never hardcode secrets or tokens.
+- The hook runs in repositories the user has not reviewed. Never follow a symlink or write
+  outside the project directory, and add a case to `tests/test_session_start.sh` for any new
+  file it writes.
