@@ -1,0 +1,19 @@
+# Dependabot opens PRs against the default branch when a dependency falls behind.
+# https://docs.github.com/code-security/dependabot/dependabot-version-updates
+version: 2
+
+updates:
+  # Actions in .github/workflows are pinned to commit SHAs; this keeps them current.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(actions)"
+    groups:
+      actions:
+        update-types:
+          - "minor"
+          - "patch"
